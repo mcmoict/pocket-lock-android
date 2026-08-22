@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.pocketlock"
+    namespace = "com.innoshift.consulting"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.pocketlock"
+        applicationId = "com.innoshift.consulting"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
