@@ -1,4 +1,4 @@
-package com.innoshift.consulting;
+package com.innoshift.consulting.pocketlock;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

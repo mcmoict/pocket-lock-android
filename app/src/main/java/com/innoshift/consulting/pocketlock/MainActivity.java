@@ -1,9 +1,8 @@
-package com.innoshift.consulting;
+package com.innoshift.consulting.pocketlock;
 
 import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;

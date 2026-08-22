@@ -86,7 +86,7 @@ adb install -r .\app\build\outputs\apk\debug\app-debug.apk
 ## 저장소 및 프로젝트 정보
 
 - 프로젝트 식별자: `innoshift-consulting`
-- Android 패키지 이름: `com.innoshift.consulting`
+- Android 패키지 이름: `com.innoshift.consulting.pocketlock`
 - 최소 Android 버전: API 26
 - 컴파일 및 대상 SDK: API 35
 - Android Gradle Plugin: `8.13.2`
