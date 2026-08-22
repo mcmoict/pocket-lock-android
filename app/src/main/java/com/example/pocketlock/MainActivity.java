@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.net.Uri;
 import android.widget.Button;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -32,8 +33,10 @@ public class MainActivity extends Activity {
         statusText = findViewById(R.id.statusText);
         pocketSwitch = findViewById(R.id.pocketSwitch);
         Button adminButton = findViewById(R.id.adminButton);
+        Button uninstallButton = findViewById(R.id.uninstallButton);
 
         adminButton.setOnClickListener(view -> requestAdminAccess());
+        uninstallButton.setOnClickListener(view -> prepareForUninstall());
         pocketSwitch.setOnCheckedChangeListener((button, checked) -> {
             if (button.isPressed()) {
                 setPocketMode(checked);
@@ -71,6 +74,27 @@ public class MainActivity extends Activity {
             stopService(serviceIntent);
         }
         updateUi();
+    }
+
+    private void prepareForUninstall() {
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(ENABLED, false).apply();
+        stopService(new Intent(this, PocketLockService.class));
+
+        if (devicePolicyManager.isAdminActive(adminComponent)) {
+            try {
+                devicePolicyManager.removeActiveAdmin(adminComponent);
+            } catch (SecurityException exception) {
+            }
+        }
+
+        if (!devicePolicyManager.isAdminActive(adminComponent)) {
+            Intent appInfoIntent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            appInfoIntent.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(appInfoIntent);
+        } else {
+            Intent adminSettingsIntent = new Intent(Settings.ACTION_SECURITY_SETTINGS);
+            startActivity(adminSettingsIntent);
+        }
     }
 
     private void updateUi() {
