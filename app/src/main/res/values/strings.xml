@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Pocket Lock</string>
+    <string name="device_admin_description">Allows Pocket Lock to lock the screen when the proximity sensor is covered.</string>
+</resources>
