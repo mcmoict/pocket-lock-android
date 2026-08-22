@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.net.Uri;
 import android.widget.Button;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -80,20 +79,11 @@ public class MainActivity extends Activity {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(ENABLED, false).apply();
         stopService(new Intent(this, PocketLockService.class));
 
-        if (devicePolicyManager.isAdminActive(adminComponent)) {
-            try {
-                devicePolicyManager.removeActiveAdmin(adminComponent);
-            } catch (SecurityException exception) {
-            }
-        }
-
-        if (!devicePolicyManager.isAdminActive(adminComponent)) {
-            Intent appInfoIntent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            appInfoIntent.setData(Uri.parse("package:" + getPackageName()));
-            startActivity(appInfoIntent);
-        } else {
-            Intent adminSettingsIntent = new Intent(Settings.ACTION_SECURITY_SETTINGS);
+        Intent adminSettingsIntent = new Intent("android.app.action.DEVICE_ADMIN_SETTINGS");
+        if (adminSettingsIntent.resolveActivity(getPackageManager()) != null) {
             startActivity(adminSettingsIntent);
+        } else {
+            startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
         }
     }
 
