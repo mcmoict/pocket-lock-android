@@ -13,8 +13,9 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
-import android.os.SystemClock;
+import android.os.Looper;
 
 public class PocketLockService extends Service implements SensorEventListener {
     private static final String CHANNEL_ID = "pocket_lock";
@@ -26,7 +27,13 @@ public class PocketLockService extends Service implements SensorEventListener {
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
     private boolean lockedForCurrentCover;
-    private long coveredSinceElapsedRealtime;
+    private Handler handler;
+    private final Runnable lockAfterConfirmedCover = () -> {
+        if (!lockedForCurrentCover && devicePolicyManager.isAdminActive(adminComponent)) {
+            lockedForCurrentCover = true;
+            devicePolicyManager.lockNow();
+        }
+    };
 
     @Override
     public void onCreate() {
@@ -38,6 +45,7 @@ public class PocketLockService extends Service implements SensorEventListener {
         proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
         devicePolicyManager = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
         adminComponent = new ComponentName(this, PocketLockAdminReceiver.class);
+        handler = new Handler(Looper.getMainLooper());
         if (proximitySensor != null) {
             sensorManager.registerListener(this, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
@@ -57,21 +65,12 @@ public class PocketLockService extends Service implements SensorEventListener {
         boolean covered = event.values[0] < proximitySensor.getMaximumRange();
         if (!covered) {
             lockedForCurrentCover = false;
-            coveredSinceElapsedRealtime = 0L;
+            handler.removeCallbacks(lockAfterConfirmedCover);
             return;
         }
 
-        if (coveredSinceElapsedRealtime == 0L) {
-            coveredSinceElapsedRealtime = SystemClock.elapsedRealtime();
-        }
-
-        boolean coverConfirmed = SystemClock.elapsedRealtime() - coveredSinceElapsedRealtime
-                >= COVER_CONFIRMATION_MILLIS;
-        if (coverConfirmed && !lockedForCurrentCover
-                && devicePolicyManager.isAdminActive(adminComponent)) {
-            lockedForCurrentCover = true;
-            devicePolicyManager.lockNow();
-        }
+        handler.removeCallbacks(lockAfterConfirmedCover);
+        handler.postDelayed(lockAfterConfirmedCover, COVER_CONFIRMATION_MILLIS);
     }
 
     @Override
@@ -80,6 +79,9 @@ public class PocketLockService extends Service implements SensorEventListener {
 
     @Override
     public void onDestroy() {
+        if (handler != null) {
+            handler.removeCallbacks(lockAfterConfirmedCover);
+        }
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
         }
