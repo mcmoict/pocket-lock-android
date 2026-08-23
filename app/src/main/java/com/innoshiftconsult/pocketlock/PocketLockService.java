@@ -14,16 +14,19 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemClock;
 
 public class PocketLockService extends Service implements SensorEventListener {
     private static final String CHANNEL_ID = "pocket_lock";
     private static final int NOTIFICATION_ID = 1;
+    private static final long COVER_CONFIRMATION_MILLIS = 800L;
 
     private SensorManager sensorManager;
     private Sensor proximitySensor;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
     private boolean lockedForCurrentCover;
+    private long coveredSinceElapsedRealtime;
 
     @Override
     public void onCreate() {
@@ -54,10 +57,18 @@ public class PocketLockService extends Service implements SensorEventListener {
         boolean covered = event.values[0] < proximitySensor.getMaximumRange();
         if (!covered) {
             lockedForCurrentCover = false;
+            coveredSinceElapsedRealtime = 0L;
             return;
         }
 
-        if (!lockedForCurrentCover && devicePolicyManager.isAdminActive(adminComponent)) {
+        if (coveredSinceElapsedRealtime == 0L) {
+            coveredSinceElapsedRealtime = SystemClock.elapsedRealtime();
+        }
+
+        boolean coverConfirmed = SystemClock.elapsedRealtime() - coveredSinceElapsedRealtime
+                >= COVER_CONFIRMATION_MILLIS;
+        if (coverConfirmed && !lockedForCurrentCover
+                && devicePolicyManager.isAdminActive(adminComponent)) {
             lockedForCurrentCover = true;
             devicePolicyManager.lockNow();
         }
