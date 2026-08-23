@@ -78,7 +78,10 @@ public class MainActivity extends Activity {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(ENABLED, false).apply();
         stopService(new Intent(this, PocketLockService.class));
 
-        Intent adminSettingsIntent = new Intent("android.app.action.DEVICE_ADMIN_SETTINGS");
+        Intent adminSettingsIntent = new Intent();
+        adminSettingsIntent.setComponent(new ComponentName(
+            "com.android.settings",
+            "com.android.settings.Settings$DeviceAdminSettingsActivity"));
         if (adminSettingsIntent.resolveActivity(getPackageManager()) != null) {
             startActivity(adminSettingsIntent);
         } else {
