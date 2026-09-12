@@ -10,13 +10,28 @@
         android:orientation="vertical"
         android:padding="28dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="POCKET LOCK"
-            android:textColor="@color/accent"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="POCKET LOCK"
+                android:textColor="@color/accent"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/app_version"
+                android:textColor="@color/muted"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -61,8 +76,37 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="근접센서 민감도"
+            android:textColor="@color/ink"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/sensitivityGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                android:id="@+id/normalSensitivity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="보통"
+                android:textColor="@color/ink" />
+
+            <RadioButton
+                android:id="@+id/sensitiveSensitivity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="민감"
+                android:textColor="@color/ink" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="28dp"
-            android:text="근접 센서가 가려지면 화면을 즉시 잠급니다. 잠금 해제는 휴대폰의 PIN, 패턴 또는 생체 인증을 사용합니다."
+            android:text="휴대폰이 세로로 뒤집힌 상태에서 주변이 10 lux 미만으로 어둡고 근접센서가 가려지면 화면을 잠급니다. 밝은 곳에서 손으로 센서만 가리는 테스트에서는 잠기지 않습니다."
             android:textColor="@color/muted"
             android:textSize="14sp" />
     </LinearLayout>

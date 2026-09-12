@@ -21,15 +21,25 @@ public class PocketLockService extends Service implements SensorEventListener {
     private static final String CHANNEL_ID = "pocket_lock";
     private static final int NOTIFICATION_ID = 1;
     private static final long COVER_CONFIRMATION_MILLIS = 800L;
+    private static final String PREFS = "pocket_lock";
+    private static final String SENSITIVE = "sensitive";
+    private static final float DARKNESS_THRESHOLD_LUX = 10.0f;
+    private static final float UPSIDE_DOWN_GRAVITY_THRESHOLD = -6.0f;
 
     private SensorManager sensorManager;
     private Sensor proximitySensor;
+    private Sensor lightSensor;
+    private Sensor accelerometer;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
     private boolean lockedForCurrentCover;
+    private boolean proximityCovered;
+    private boolean isDark;
+    private boolean isUpsideDown;
     private Handler handler;
     private final Runnable lockAfterConfirmedCover = () -> {
-        if (!lockedForCurrentCover && devicePolicyManager.isAdminActive(adminComponent)) {
+        if (proximityCovered && isDark && isUpsideDown
+                && !lockedForCurrentCover && devicePolicyManager.isAdminActive(adminComponent)) {
             lockedForCurrentCover = true;
             devicePolicyManager.lockNow();
         }
@@ -43,11 +53,19 @@ public class PocketLockService extends Service implements SensorEventListener {
 
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+        lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         devicePolicyManager = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
         adminComponent = new ComponentName(this, PocketLockAdminReceiver.class);
         handler = new Handler(Looper.getMainLooper());
         if (proximitySensor != null) {
             sensorManager.registerListener(this, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+        if (lightSensor != null) {
+            sensorManager.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+        if (accelerometer != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
 
@@ -58,12 +76,27 @@ public class PocketLockService extends Service implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() != Sensor.TYPE_PROXIMITY) {
-            return;
+        switch (event.sensor.getType()) {
+            case Sensor.TYPE_PROXIMITY:
+                float threshold = getSharedPreferences(PREFS, MODE_PRIVATE)
+                        .getBoolean(SENSITIVE, false)
+                        ? proximitySensor.getMaximumRange()
+                        : Math.min(proximitySensor.getMaximumRange(), 1.0f);
+                proximityCovered = event.values[0] <= threshold;
+                break;
+            case Sensor.TYPE_LIGHT:
+                isDark = event.values[0] < DARKNESS_THRESHOLD_LUX;
+                break;
+            case Sensor.TYPE_ACCELEROMETER:
+                float horizontalGravity = Math.abs(event.values[0]);
+                isUpsideDown = Math.abs(event.values[1]) > horizontalGravity
+                        && event.values[1] < UPSIDE_DOWN_GRAVITY_THRESHOLD;
+                break;
+            default:
+                return;
         }
 
-        boolean covered = event.values[0] < proximitySensor.getMaximumRange();
-        if (!covered) {
+        if (!proximityCovered || !isDark || !isUpsideDown) {
             lockedForCurrentCover = false;
             handler.removeCallbacks(lockAfterConfirmedCover);
             return;

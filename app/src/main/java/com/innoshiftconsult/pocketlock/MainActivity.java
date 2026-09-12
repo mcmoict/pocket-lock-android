@@ -8,6 +8,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.Button;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -15,6 +17,7 @@ public class MainActivity extends Activity {
     private static final int ADMIN_REQUEST = 100;
     private static final String PREFS = "pocket_lock";
     private static final String ENABLED = "enabled";
+    private static final String SENSITIVE = "sensitive";
 
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
@@ -32,6 +35,24 @@ public class MainActivity extends Activity {
         pocketSwitch = findViewById(R.id.pocketSwitch);
         Button adminButton = findViewById(R.id.adminButton);
         Button uninstallButton = findViewById(R.id.uninstallButton);
+        RadioGroup sensitivityGroup = findViewById(R.id.sensitivityGroup);
+        RadioButton normalRadio = findViewById(R.id.normalSensitivity);
+        RadioButton sensitiveRadio = findViewById(R.id.sensitiveSensitivity);
+
+        boolean sensitive = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SENSITIVE, false);
+        sensitivityGroup.check(sensitive ? sensitiveRadio.getId() : normalRadio.getId());
+        sensitivityGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId != sensitiveRadio.getId()) {
+                saveSensitivity(false);
+                return;
+            }
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("민감 모드 사용")
+                    .setMessage("민감 모드에서는 근접센서에 의해 사용 중인 화면이 닫힐 수 있습니다. 설정하시겠습니까?")
+                    .setNegativeButton("취소", (dialog, which) -> group.check(normalRadio.getId()))
+                    .setPositiveButton("설정", (dialog, which) -> saveSensitivity(true))
+                    .show();
+        });
 
         adminButton.setOnClickListener(view -> requestAdminAccess());
         uninstallButton.setOnClickListener(view -> prepareForUninstall());
@@ -72,6 +93,10 @@ public class MainActivity extends Activity {
             stopService(serviceIntent);
         }
         updateUi();
+    }
+
+    private void saveSensitivity(boolean sensitive) {
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(SENSITIVE, sensitive).apply();
     }
 
     private void prepareForUninstall() {
