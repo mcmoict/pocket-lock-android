@@ -50,6 +50,15 @@
             android:textColor="@color/muted"
             android:textSize="16sp" />
 
+        <TextView
+            android:id="@+id/sensorStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="센서 상태를 기다리는 중..."
+            android:textColor="@color/muted"
+            android:textSize="14sp" />
+
         <Button
             android:id="@+id/adminButton"
             android:layout_width="match_parent"
@@ -105,8 +114,37 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="주변 밝기 조건"
+            android:textColor="@color/ink"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/lightGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                android:id="@+id/anyLight"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="사용 안 함 (기본)"
+                android:textColor="@color/ink" />
+
+            <RadioButton
+                android:id="@+id/darkOnly"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="어두울 때만 잠금"
+                android:textColor="@color/ink" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="28dp"
-            android:text="휴대폰이 세로로 뒤집힌 상태에서 주변이 10 lux 미만으로 어둡고 근접센서가 가려지면 화면을 잠급니다. 밝은 곳에서 손으로 센서만 가리는 테스트에서는 잠기지 않습니다."
+            android:text="근접센서가 0.5초 이상 가려지면 화면을 잠급니다. 밝기 조건을 선택하면 어두울 때만 잠글 수 있습니다."
             android:textColor="@color/muted"
             android:textSize="14sp" />
     </LinearLayout>

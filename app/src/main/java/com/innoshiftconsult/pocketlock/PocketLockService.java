@@ -20,11 +20,16 @@ import android.os.Looper;
 public class PocketLockService extends Service implements SensorEventListener {
     private static final String CHANNEL_ID = "pocket_lock";
     private static final int NOTIFICATION_ID = 1;
-    private static final long COVER_CONFIRMATION_MILLIS = 800L;
+    private static final long COVER_CONFIRMATION_MILLIS = 500L;
     private static final String PREFS = "pocket_lock";
     private static final String SENSITIVE = "sensitive";
-    private static final float DARKNESS_THRESHOLD_LUX = 10.0f;
-    private static final float UPSIDE_DOWN_GRAVITY_THRESHOLD = -6.0f;
+    private static final String REQUIRE_DARKNESS = "require_darkness";
+    public static final String ACTION_SENSOR_STATE = "com.innoshiftconsult.pocketlock.SENSOR_STATE";
+    public static final String EXTRA_PROXIMITY = "proximity";
+    public static final String EXTRA_UPSIDE_DOWN = "upside_down";
+    public static final String EXTRA_DARK = "dark";
+    private static final float DARKNESS_THRESHOLD_LUX = 30.0f;
+    private static final float UPSIDE_DOWN_GRAVITY_THRESHOLD = -4.5f;
 
     private SensorManager sensorManager;
     private Sensor proximitySensor;
@@ -38,7 +43,7 @@ public class PocketLockService extends Service implements SensorEventListener {
     private boolean isUpsideDown;
     private Handler handler;
     private final Runnable lockAfterConfirmedCover = () -> {
-        if (proximityCovered && isDark && isUpsideDown
+        if (proximityCovered && isDarkEnough()
                 && !lockedForCurrentCover && devicePolicyManager.isAdminActive(adminComponent)) {
             lockedForCurrentCover = true;
             devicePolicyManager.lockNow();
@@ -55,6 +60,8 @@ public class PocketLockService extends Service implements SensorEventListener {
         proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        isDark = lightSensor == null;
+        isUpsideDown = accelerometer == null;
         devicePolicyManager = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
         adminComponent = new ComponentName(this, PocketLockAdminReceiver.class);
         handler = new Handler(Looper.getMainLooper());
@@ -67,6 +74,7 @@ public class PocketLockService extends Service implements SensorEventListener {
         if (accelerometer != null) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         }
+        broadcastSensorState();
     }
 
     @Override
@@ -82,28 +90,42 @@ public class PocketLockService extends Service implements SensorEventListener {
                         .getBoolean(SENSITIVE, false)
                         ? proximitySensor.getMaximumRange()
                         : Math.min(proximitySensor.getMaximumRange(), 1.0f);
-                proximityCovered = event.values[0] <= threshold;
+                proximityCovered = event.values[0] < threshold;
                 break;
             case Sensor.TYPE_LIGHT:
                 isDark = event.values[0] < DARKNESS_THRESHOLD_LUX;
                 break;
             case Sensor.TYPE_ACCELEROMETER:
-                float horizontalGravity = Math.abs(event.values[0]);
-                isUpsideDown = Math.abs(event.values[1]) > horizontalGravity
-                        && event.values[1] < UPSIDE_DOWN_GRAVITY_THRESHOLD;
+                isUpsideDown = event.values[1] < UPSIDE_DOWN_GRAVITY_THRESHOLD;
                 break;
             default:
                 return;
         }
 
-        if (!proximityCovered || !isDark || !isUpsideDown) {
+        if (!proximityCovered || !isDarkEnough()) {
             lockedForCurrentCover = false;
             handler.removeCallbacks(lockAfterConfirmedCover);
+            broadcastSensorState();
             return;
         }
 
         handler.removeCallbacks(lockAfterConfirmedCover);
         handler.postDelayed(lockAfterConfirmedCover, COVER_CONFIRMATION_MILLIS);
+        broadcastSensorState();
+    }
+
+    private void broadcastSensorState() {
+        Intent stateIntent = new Intent(ACTION_SENSOR_STATE)
+                .setPackage(getPackageName())
+                .putExtra(EXTRA_PROXIMITY, proximityCovered)
+                .putExtra(EXTRA_UPSIDE_DOWN, isUpsideDown)
+                .putExtra(EXTRA_DARK, isDark);
+        sendBroadcast(stateIntent);
+    }
+
+    private boolean isDarkEnough() {
+        return !getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(REQUIRE_DARKNESS, false)
+                || isDark;
     }
 
     @Override

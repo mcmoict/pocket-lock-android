@@ -3,7 +3,13 @@ package com.innoshiftconsult.pocketlock;
 import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -18,11 +24,23 @@ public class MainActivity extends Activity {
     private static final String PREFS = "pocket_lock";
     private static final String ENABLED = "enabled";
     private static final String SENSITIVE = "sensitive";
+    private static final String REQUIRE_DARKNESS = "require_darkness";
 
     private DevicePolicyManager devicePolicyManager;
+    private SensorManager sensorManager;
     private ComponentName adminComponent;
     private Switch pocketSwitch;
     private TextView statusText;
+    private TextView sensorStatusText;
+    private final BroadcastReceiver sensorStateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            updateSensorStatus(
+                    intent.getBooleanExtra(PocketLockService.EXTRA_PROXIMITY, false),
+                    intent.getBooleanExtra(PocketLockService.EXTRA_UPSIDE_DOWN, false),
+                    intent.getBooleanExtra(PocketLockService.EXTRA_DARK, false));
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,14 +48,19 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         devicePolicyManager = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         adminComponent = new ComponentName(this, PocketLockAdminReceiver.class);
         statusText = findViewById(R.id.statusText);
+        sensorStatusText = findViewById(R.id.sensorStatusText);
         pocketSwitch = findViewById(R.id.pocketSwitch);
         Button adminButton = findViewById(R.id.adminButton);
         Button uninstallButton = findViewById(R.id.uninstallButton);
         RadioGroup sensitivityGroup = findViewById(R.id.sensitivityGroup);
         RadioButton normalRadio = findViewById(R.id.normalSensitivity);
         RadioButton sensitiveRadio = findViewById(R.id.sensitiveSensitivity);
+        RadioGroup lightGroup = findViewById(R.id.lightGroup);
+        RadioButton anyLightRadio = findViewById(R.id.anyLight);
+        RadioButton darkOnlyRadio = findViewById(R.id.darkOnly);
 
         boolean sensitive = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SENSITIVE, false);
         sensitivityGroup.check(sensitive ? sensitiveRadio.getId() : normalRadio.getId());
@@ -54,6 +77,14 @@ public class MainActivity extends Activity {
                     .show();
         });
 
+                boolean requireDarkness = getSharedPreferences(PREFS, MODE_PRIVATE)
+                    .getBoolean(REQUIRE_DARKNESS, false);
+                lightGroup.check(requireDarkness ? darkOnlyRadio.getId() : anyLightRadio.getId());
+                lightGroup.setOnCheckedChangeListener((group, checkedId) ->
+                    getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                        .putBoolean(REQUIRE_DARKNESS, checkedId == darkOnlyRadio.getId())
+                        .apply());
+
         adminButton.setOnClickListener(view -> requestAdminAccess());
         uninstallButton.setOnClickListener(view -> prepareForUninstall());
         pocketSwitch.setOnCheckedChangeListener((button, checked) -> {
@@ -62,6 +93,7 @@ public class MainActivity extends Activity {
             }
         });
         updateUi();
+        requestNotificationPermission();
     }
 
     private void requestAdminAccess() {
@@ -117,15 +149,62 @@ public class MainActivity extends Activity {
     private void updateUi() {
         boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
         boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
-        statusText.setText(adminActive
-                ? "준비됨 · 근접 센서를 감시할 수 있습니다."
-                : "먼저 기기 관리자 권한을 허용해 주세요.");
+        boolean proximityAvailable = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY) != null;
+        if (!adminActive) {
+            statusText.setText("먼저 기기 관리자 권한을 허용해 주세요.");
+        } else if (!proximityAvailable) {
+            statusText.setText("이 휴대폰에는 근접센서가 없어 사용할 수 없습니다.");
+        } else if (enabled) {
+            statusText.setText("감시 중 · 근접센서가 0.5초 가려지면 화면을 잠급니다.");
+        } else {
+            statusText.setText("준비됨 · 주머니 잠금 켜기를 활성화해 주세요.");
+        }
         pocketSwitch.setChecked(adminActive && enabled);
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && checkSelfPermission("android.permission.POST_NOTIFICATIONS")
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 101);
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        IntentFilter sensorFilter = new IntentFilter(PocketLockService.ACTION_SENSOR_STATE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(sensorStateReceiver, sensorFilter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(sensorStateReceiver, sensorFilter);
+        }
         updateUi();
+        boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
+        boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
+        if (adminActive && enabled) {
+            Intent serviceIntent = new Intent(this, PocketLockService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        unregisterReceiver(sensorStateReceiver);
+        super.onPause();
+    }
+
+    private void updateSensorStatus(boolean proximityCovered, boolean upsideDown, boolean dark) {
+        boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
+        boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
+        sensorStatusText.setText("근접센서: " + (proximityCovered ? "가려짐" : "노출됨")
+                + "\n방향: " + (upsideDown ? "세로 뒤집힘" : "일반")
+                + "\n조도: " + (dark ? "어두움" : "밝음")
+                + "\n관리자: " + (adminActive ? "허용됨" : "허용 필요")
+                + "\n서비스: " + (enabled ? "활성화" : "비활성화"));
     }
 }
