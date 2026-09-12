@@ -60,12 +60,13 @@ public class MainActivity extends Activity {
         statusText = findViewById(R.id.statusText);
         sensorStatusText = findViewById(R.id.sensorStatusText);
         TextView conditionDescriptionText = findViewById(R.id.conditionDescriptionText);
-        updateDebugVisibility(sensorStatusText, conditionDescriptionText);
+        Button lockTestButton = findViewById(R.id.lockTestButton);
+        updateDebugVisibility(sensorStatusText, conditionDescriptionText, lockTestButton);
         new Handler(Looper.getMainLooper()).postDelayed(
-            () -> updateDebugVisibility(sensorStatusText, conditionDescriptionText), 1000L);
+            () -> updateDebugVisibility(sensorStatusText, conditionDescriptionText, lockTestButton),
+            1000L);
         pocketSwitch = findViewById(R.id.pocketSwitch);
         Button adminButton = findViewById(R.id.adminButton);
-        Button lockTestButton = findViewById(R.id.lockTestButton);
         Button uninstallButton = findViewById(R.id.uninstallButton);
         RadioGroup sensitivityGroup = findViewById(R.id.sensitivityGroup);
         RadioButton normalRadio = findViewById(R.id.normalSensitivity);
@@ -194,7 +195,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        updateDebugVisibility(sensorStatusText, findViewById(R.id.conditionDescriptionText));
+        updateDebugVisibility(sensorStatusText, findViewById(R.id.conditionDescriptionText),
+            findViewById(R.id.lockTestButton));
         IntentFilter sensorFilter = new IntentFilter(PocketLockService.ACTION_SENSOR_STATE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(sensorStateReceiver, sensorFilter, Context.RECEIVER_NOT_EXPORTED);
@@ -230,10 +232,12 @@ public class MainActivity extends Activity {
                 + "\n서비스: " + (enabled ? "활성화" : "비활성화"));
     }
 
-    private void updateDebugVisibility(TextView sensorStatus, TextView conditionDescription) {
+        private void updateDebugVisibility(
+            TextView sensorStatus, TextView conditionDescription, Button lockTestButton) {
         int visibility = BuildConfig.DEBUG && Debug.isDebuggerConnected()
                 ? View.VISIBLE : View.GONE;
         sensorStatus.setVisibility(visibility);
         conditionDescription.setVisibility(visibility);
+        lockTestButton.setVisibility(visibility);
     }
 }
