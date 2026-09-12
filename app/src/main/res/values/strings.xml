@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Pocket Lock</string>
-    <string name="app_version">v0.1.7</string>
+    <string name="app_version">v0.1.16</string>
     <string name="device_admin_description">Allows Pocket Lock to lock the screen when the proximity sensor is covered.</string>
 </resources>

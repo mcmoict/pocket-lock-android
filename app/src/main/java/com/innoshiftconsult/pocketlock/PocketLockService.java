@@ -38,12 +38,14 @@ public class PocketLockService extends Service implements SensorEventListener {
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
     private boolean lockedForCurrentCover;
+    private boolean lockPending;
     private boolean proximityCovered;
     private boolean isDark;
     private boolean isUpsideDown;
     private Handler handler;
     private final Runnable lockAfterConfirmedCover = () -> {
-        if (proximityCovered && isDarkEnough()
+        lockPending = false;
+        if (proximityCovered && isUpsideDown
                 && !lockedForCurrentCover && devicePolicyManager.isAdminActive(adminComponent)) {
             lockedForCurrentCover = true;
             devicePolicyManager.lockNow();
@@ -102,15 +104,23 @@ public class PocketLockService extends Service implements SensorEventListener {
                 return;
         }
 
-        if (!proximityCovered || !isDarkEnough()) {
+        if (event.sensor.getType() == Sensor.TYPE_LIGHT) {
+            broadcastSensorState();
+            return;
+        }
+
+        if (!proximityCovered || !isUpsideDown) {
             lockedForCurrentCover = false;
+            lockPending = false;
             handler.removeCallbacks(lockAfterConfirmedCover);
             broadcastSensorState();
             return;
         }
 
-        handler.removeCallbacks(lockAfterConfirmedCover);
-        handler.postDelayed(lockAfterConfirmedCover, COVER_CONFIRMATION_MILLIS);
+        if (!lockPending && !lockedForCurrentCover) {
+            lockPending = true;
+            handler.postDelayed(lockAfterConfirmedCover, COVER_CONFIRMATION_MILLIS);
+        }
         broadcastSensorState();
     }
 
@@ -121,11 +131,6 @@ public class PocketLockService extends Service implements SensorEventListener {
                 .putExtra(EXTRA_UPSIDE_DOWN, isUpsideDown)
                 .putExtra(EXTRA_DARK, isDark);
         sendBroadcast(stateIntent);
-    }
-
-    private boolean isDarkEnough() {
-        return !getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(REQUIRE_DARKNESS, false)
-                || isDark;
     }
 
     @Override
