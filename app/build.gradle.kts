@@ -12,7 +12,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.innoshiftconsult.pocketlock"
-    compileSdk = 35
+    compileSdk = 36
 
     buildFeatures {
         buildConfig = true
@@ -21,9 +21,9 @@ android {
     defaultConfig {
         applicationId = "com.innoshiftconsult.pocketlock"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 19
-        versionName = "0.1.19"
+        targetSdk = 36
+        versionCode = 20
+        versionName = "1.0"
     }
 
     signingConfigs {
