@@ -118,7 +118,7 @@ keyPassword=KEY_PASSWORD
 
 - Android 패키지 이름: `com.innoshiftconsult.pocketlock`
 - 최소 Android 버전: API 26
-- 컴파일 및 대상 SDK: API 35
-- Android Gradle Plugin: `8.13.2`
-- Gradle Wrapper: `9.3.0`
+- 컴파일 및 대상 SDK: API 36
+- Android Gradle Plugin: `9.3.2`
+- Gradle Wrapper: `9.5.0`
 - GitHub: https://github.com/mcmoict/pocket-lock-android
