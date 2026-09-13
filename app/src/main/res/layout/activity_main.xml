@@ -119,41 +119,5 @@
                 android:textColor="@color/ink" />
         </RadioGroup>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="주변 밝기 조건"
-            android:textColor="@color/ink"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <RadioGroup
-            android:id="@+id/lightGroup"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <RadioButton
-                android:id="@+id/anyLight"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="사용 안 함 (기본)"
-                android:textColor="@color/ink" />
-
-            <RadioButton
-                android:id="@+id/darkOnly"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="어두울 때만 잠금"
-                android:textColor="@color/ink" />
-        </RadioGroup>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="휴대폰이 세로로 뒤집히고 근접센서가 0.5초 이상 가려지면 화면을 잠급니다."
-            android:textColor="@color/muted"
-            android:textSize="14sp" />
     </LinearLayout>
 </ScrollView>

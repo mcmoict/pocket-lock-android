@@ -1,12 +1,11 @@
 # Pocket Lock
 
-휴대폰이 세로로 뒤집힌 상태에서 주변이 어둡고 근접 센서가 가려지면 Android의 시스템 잠금을 요청해 주머니 속 오작동을 줄이는 Android 앱입니다. 세로 방향은 약간 기울어진 상태까지 허용합니다.
+휴대폰이 세로로 뒤집힌 상태에서 근접 센서가 가려지면 Android의 시스템 잠금을 요청해 주머니 속 오작동을 줄이는 Android 앱입니다. 세로 방향은 약간 기울어진 상태까지 허용합니다.
 
 ## 현재 기능
 
-- 기본적으로 근접 센서가 0.5초 이상 연속으로 가려지면 화면을 잠금
-- 휴대폰 방향은 참고 센서로만 감지하며, 잠금을 막는 필수 조건으로 사용하지 않음
-- 주변 밝기 조건은 설정에서 `어두울 때만 잠금 (기본)` 또는 `사용 안 함`으로 선택
+- 기본 모드에서는 휴대폰이 세로로 뒤집힌 상태에서 근접 센서가 0.5초 이상 연속으로 가려지면 화면을 잠금
+- 민감 모드에서는 방향과 관계없이 근접 센서가 0.3초 이상 연속으로 가려지면 화면을 잠금
 - 근접 센서 민감도를 `보통`과 `민감` 중에서 선택
 - `민감` 선택 시 사용 중인 화면이 근접 센서에 의해 닫힐 수 있다는 확인 메시지 표시
 - 같은 가림 상태에서는 중복 잠금을 방지
@@ -32,8 +31,8 @@ Android 13 이상에서 알림 권한을 요청하면 허용해야 포그라운�
 ## 사용 방법
 
 1. 화면이 켜진 상태에서 휴대폰을 주머니에 넣습니다.
-2. 휴대폰을 주머니에 넣어 근접 센서가 가려지면 약 0.5초 후 화면이 잠깁니다.
-3. 필요하면 앱에서 `사용 안 함`을 선택해 조도 조건을 해제할 수 있습니다.
+2. 기본 모드에서는 휴대폰을 세로로 뒤집어 주머니에 넣고 근접 센서가 가려지면 약 0.5초 후 화면이 잠깁니다.
+3. 민감 모드에서는 방향과 관계없이 근접 센서가 가려지면 약 0.3초 후 화면이 잠깁니다.
 4. PIN, 패턴, 비밀번호 또는 생체 인증 등 휴대폰의 기본 방식으로 잠금을 해제합니다.
 5. 센서가 다시 노출되면 다음 가림을 감지할 수 있습니다.
 
@@ -68,6 +67,31 @@ ADB로 연결된 휴대폰에 직접 설치할 수도 있습니다.
 adb devices
 adb install -r .\app\build\outputs\apk\debug\app-debug.apk
 ```
+
+## Google Play 출시용 AAB
+
+Play Console에 업로드하려면 앱 번들을 릴리스 키로 서명해야 합니다. 업로드 키는 한 번 생성한 뒤 안전하게 백업하고 저장소에는 올리지 않습니다.
+
+```powershell
+keytool -genkeypair -v -keystore pocket-lock-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias pocket-lock-upload
+```
+
+프로젝트 루트의 `keystore.properties`에 다음 값을 입력합니다. `storeFile`은 키 파일의 절대 경로를 사용합니다.
+
+```properties
+storeFile=C:/secure/path/pocket-lock-upload.jks
+storePassword=KEYSTORE_PASSWORD
+keyAlias=pocket-lock-upload
+keyPassword=KEY_PASSWORD
+```
+
+그 다음 릴리스 번들을 생성합니다.
+
+```powershell
+.\gradlew.bat :app:bundleRelease
+```
+
+생성 파일은 `app/build/outputs/bundle/release/app-release.aab`입니다.
 
 휴대폰이 `adb devices`에 표시되지 않으면 USB 디버깅, USB 케이블, 연결 모드 및 제조사 USB 드라이버를 확인합니다.
 

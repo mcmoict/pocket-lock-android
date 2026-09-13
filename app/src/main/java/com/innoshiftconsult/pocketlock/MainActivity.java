@@ -31,8 +31,6 @@ public class MainActivity extends Activity {
     private static final String PREFS = "pocket_lock";
     private static final String ENABLED = "enabled";
     private static final String SENSITIVE = "sensitive";
-    private static final String REQUIRE_DARKNESS = "require_darkness";
-
     private DevicePolicyManager devicePolicyManager;
     private SensorManager sensorManager;
     private ComponentName adminComponent;
@@ -44,8 +42,7 @@ public class MainActivity extends Activity {
         public void onReceive(Context context, Intent intent) {
             updateSensorStatus(
                     intent.getBooleanExtra(PocketLockService.EXTRA_PROXIMITY, false),
-                    intent.getBooleanExtra(PocketLockService.EXTRA_UPSIDE_DOWN, false),
-                    intent.getBooleanExtra(PocketLockService.EXTRA_DARK, false));
+                    intent.getBooleanExtra(PocketLockService.EXTRA_UPSIDE_DOWN, false));
         }
     };
 
@@ -71,10 +68,6 @@ public class MainActivity extends Activity {
         RadioGroup sensitivityGroup = findViewById(R.id.sensitivityGroup);
         RadioButton normalRadio = findViewById(R.id.normalSensitivity);
         RadioButton sensitiveRadio = findViewById(R.id.sensitiveSensitivity);
-        RadioGroup lightGroup = findViewById(R.id.lightGroup);
-        RadioButton anyLightRadio = findViewById(R.id.anyLight);
-        RadioButton darkOnlyRadio = findViewById(R.id.darkOnly);
-
         boolean sensitive = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SENSITIVE, false);
         sensitivityGroup.check(sensitive ? sensitiveRadio.getId() : normalRadio.getId());
         sensitivityGroup.setOnCheckedChangeListener((group, checkedId) -> {
@@ -89,14 +82,6 @@ public class MainActivity extends Activity {
                     .setPositiveButton("설정", (dialog, which) -> saveSensitivity(true))
                     .show();
         });
-
-                boolean requireDarkness = getSharedPreferences(PREFS, MODE_PRIVATE)
-                    .getBoolean(REQUIRE_DARKNESS, false);
-                lightGroup.check(requireDarkness ? darkOnlyRadio.getId() : anyLightRadio.getId());
-                lightGroup.setOnCheckedChangeListener((group, checkedId) ->
-                    getSharedPreferences(PREFS, MODE_PRIVATE).edit()
-                        .putBoolean(REQUIRE_DARKNESS, checkedId == darkOnlyRadio.getId())
-                        .apply());
 
         adminButton.setOnClickListener(view -> requestAdminAccess());
         lockTestButton.setOnClickListener(view -> testDeviceLock());
@@ -171,13 +156,16 @@ public class MainActivity extends Activity {
     private void updateUi() {
         boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
         boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
+        boolean sensitive = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SENSITIVE, false);
         boolean proximityAvailable = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY) != null;
         if (!adminActive) {
             statusText.setText("먼저 기기 관리자 권한을 허용해 주세요.");
         } else if (!proximityAvailable) {
             statusText.setText("이 휴대폰에는 근접센서가 없어 사용할 수 없습니다.");
         } else if (enabled) {
-            statusText.setText("감시 중 · 근접센서가 0.5초 가려지면 화면을 잠급니다.");
+            statusText.setText(sensitive
+                    ? "감시 중 · 근접센서가 0.3초 이상 가려지면 화면을 잠급니다."
+                    : "감시 중 · 휴대폰이 세로로 뒤집히고 근접센서가 0.5초 이상 가려지면 화면을 잠급니다.");
         } else {
             statusText.setText("준비됨 · 주머니 잠금 켜기를 활성화해 주세요.");
         }
@@ -222,12 +210,11 @@ public class MainActivity extends Activity {
         super.onPause();
     }
 
-    private void updateSensorStatus(boolean proximityCovered, boolean upsideDown, boolean dark) {
+    private void updateSensorStatus(boolean proximityCovered, boolean upsideDown) {
         boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
         boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
         sensorStatusText.setText("근접센서: " + (proximityCovered ? "가려짐" : "노출됨")
                 + "\n방향: " + (upsideDown ? "세로 뒤집힘" : "일반")
-                + "\n조도: " + (dark ? "어두움" : "밝음")
                 + "\n관리자: " + (adminActive ? "허용됨" : "허용 필요")
                 + "\n서비스: " + (enabled ? "활성화" : "비활성화"));
     }

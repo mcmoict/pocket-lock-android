@@ -2,6 +2,9 @@
 .idea/
 build/
 local.properties
+keystore.properties
+*.jks
+*.keystore
 gradle/gradle-daemon-jvm.properties
 
 *.iml
