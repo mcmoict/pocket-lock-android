@@ -19,6 +19,7 @@ import android.os.Debug;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.net.Uri;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -28,6 +29,8 @@ import android.view.View;
 
 public class MainActivity extends Activity {
     private static final int ADMIN_REQUEST = 100;
+    private static final String PRIVACY_POLICY_URL =
+            "https://mcmoict.github.io/pocket-lock-android/privacy-policy.html";
     private static final String PREFS = "pocket_lock";
     private static final String ENABLED = "enabled";
     private static final String SENSITIVE = "sensitive";
@@ -68,6 +71,7 @@ public class MainActivity extends Activity {
         RadioGroup sensitivityGroup = findViewById(R.id.sensitivityGroup);
         RadioButton normalRadio = findViewById(R.id.normalSensitivity);
         RadioButton sensitiveRadio = findViewById(R.id.sensitiveSensitivity);
+        TextView privacyPolicyLink = findViewById(R.id.privacyPolicyLink);
         boolean sensitive = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SENSITIVE, false);
         sensitivityGroup.check(sensitive ? sensitiveRadio.getId() : normalRadio.getId());
         sensitivityGroup.setOnCheckedChangeListener((group, checkedId) -> {
@@ -86,6 +90,8 @@ public class MainActivity extends Activity {
         adminButton.setOnClickListener(view -> requestAdminAccess());
         lockTestButton.setOnClickListener(view -> testDeviceLock());
         uninstallButton.setOnClickListener(view -> prepareForUninstall());
+        privacyPolicyLink.setOnClickListener(view -> startActivity(
+            new Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL))));
         pocketSwitch.setOnCheckedChangeListener((button, checked) -> {
             if (button.isPressed()) {
                 setPocketMode(checked);
@@ -136,6 +142,7 @@ public class MainActivity extends Activity {
 
     private void saveSensitivity(boolean sensitive) {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(SENSITIVE, sensitive).apply();
+        updateUi();
     }
 
     private void prepareForUninstall() {

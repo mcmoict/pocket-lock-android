@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">Pocket Lock</string>
+    <string name="app_name">Pocket Lock - 주머니 자동 잠금</string>
     <string name="app_version">v1.0</string>
     <string name="device_admin_description">Allows Pocket Lock to lock the screen when the proximity sensor is covered.</string>
+    <string name="privacy_policy">개인정보처리방침</string>
 </resources>
