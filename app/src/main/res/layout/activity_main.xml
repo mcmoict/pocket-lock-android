@@ -2,13 +2,17 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/paper">
+    android:background="@drawable/screen_background"
+    android:clipToPadding="false">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="28dp">
+        android:paddingStart="22dp"
+        android:paddingTop="24dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="28dp">
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -19,9 +23,9 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="POCKET LOCK"
+                android:text="Pocket Lock"
                 android:textColor="@color/accent"
-                android:textSize="14sp"
+                android:textSize="17sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -30,105 +34,138 @@
                 android:layout_marginStart="8dp"
                 android:text="@string/app_version"
                 android:textColor="@color/muted"
-                android:textSize="12sp" />
+                android:textSize="15sp" />
         </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="28dp"
             android:text="주머니 속 화면을&#10;잠그는 가장 단순한 방법"
-            android:textColor="@color/ink"
-            android:textSize="32sp"
+            android:textColor="@color/white"
+            android:textSize="31sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/statusText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="22dp"
             android:textColor="@color/muted"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/sensorStatusText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="센서 상태를 기다리는 중..."
-            android:textColor="@color/muted"
-            android:textSize="14sp" />
+            android:textSize="15sp" />
 
         <Button
             android:id="@+id/adminButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="기기 관리자 권한 허용" />
-
-        <Button
-            android:id="@+id/lockTestButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="화면 잠금 테스트" />
+            android:background="@drawable/lavender_button"
+            android:drawableStart="@android:drawable/ic_lock_lock"
+            android:drawableEnd="@drawable/ic_arrow_forward"
+            android:drawableTint="@color/icon_background"
+            android:drawablePadding="14dp"
+            android:minHeight="64dp"
+            android:paddingStart="28dp"
+            android:paddingEnd="18dp"
+            android:text="기기 관리자 권한 허용"
+            android:textAllCaps="false"
+            android:textColor="@color/ink"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/uninstallButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="앱 삭제 준비" />
-
-        <Switch
-            android:id="@+id/pocketSwitch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="주머니 잠금 켜기"
-            android:textColor="@color/ink"
-            android:textSize="18sp" />
-
-        <TextView
-            android:id="@+id/conditionDescriptionText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="근접센서 민감도"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/lavender_button"
+            android:drawableStart="@android:drawable/ic_menu_delete"
+            android:drawableEnd="@drawable/ic_arrow_forward"
+            android:drawableTint="@color/icon_background"
+            android:drawablePadding="14dp"
+            android:minHeight="64dp"
+            android:paddingStart="28dp"
+            android:paddingEnd="18dp"
+            android:text="앱 삭제 준비"
+            android:textAllCaps="false"
             android:textColor="@color/ink"
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <RadioGroup
-            android:id="@+id/sensitivityGroup"
+        <Button
+            android:id="@+id/diagnosticsButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/lavender_button"
+            android:drawableStart="@android:drawable/ic_menu_info_details"
+            android:drawableEnd="@drawable/ic_arrow_forward"
+            android:drawableTint="@color/icon_background"
+            android:drawablePadding="14dp"
+            android:minHeight="64dp"
+            android:paddingStart="28dp"
+            android:paddingEnd="18dp"
+            android:text="기기 진단"
+            android:textAllCaps="false"
+            android:textColor="@color/ink"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
-            <RadioButton
-                android:id="@+id/normalSensitivity"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:orientation="vertical"
+            android:background="@drawable/dark_panel"
+            android:paddingStart="20dp"
+            android:paddingTop="18dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="14dp">
+
+            <Switch
+                android:id="@+id/pocketSwitch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="보통"
-                android:textColor="@color/ink" />
+                android:padding="0dp"
+                android:text="주머니 잠금 켜기"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
-            <RadioButton
-                android:id="@+id/sensitiveSensitivity"
+            <RadioGroup
+                android:id="@+id/sensitivityGroup"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="민감"
-                android:textColor="@color/ink" />
-        </RadioGroup>
+                android:layout_marginTop="8dp">
+
+                <RadioButton
+                    android:id="@+id/normalSensitivity"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="보통"
+                    android:textColor="@color/white"
+                    android:buttonTint="@color/accent" />
+
+                <RadioButton
+                    android:id="@+id/sensitiveSensitivity"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="민감"
+                    android:textColor="@color/white"
+                    android:buttonTint="@color/accent" />
+            </RadioGroup>
+        </LinearLayout>
 
         <TextView
             android:id="@+id/privacyPolicyLink"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="28dp"
             android:layout_marginBottom="8dp"
             android:text="@string/privacy_policy"
             android:textColor="@color/accent"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:clickable="true"
             android:focusable="true" />

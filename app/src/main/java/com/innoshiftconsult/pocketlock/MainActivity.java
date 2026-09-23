@@ -1,8 +1,6 @@
 package com.innoshiftconsult.pocketlock;
 
 import com.innoshiftconsult.pocketlock.R;
-import com.innoshiftconsult.pocketlock.BuildConfig;
-
 import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
@@ -15,9 +13,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Debug;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.net.Uri;
 import android.widget.Button;
@@ -25,7 +20,6 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.view.View;
 
 public class MainActivity extends Activity {
     private static final int ADMIN_REQUEST = 100;
@@ -39,15 +33,6 @@ public class MainActivity extends Activity {
     private ComponentName adminComponent;
     private Switch pocketSwitch;
     private TextView statusText;
-    private TextView sensorStatusText;
-    private final BroadcastReceiver sensorStateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            updateSensorStatus(
-                    intent.getBooleanExtra(PocketLockService.EXTRA_PROXIMITY, false),
-                    intent.getBooleanExtra(PocketLockService.EXTRA_UPSIDE_DOWN, false));
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,38 +43,52 @@ public class MainActivity extends Activity {
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         adminComponent = new ComponentName(this, PocketLockAdminReceiver.class);
         statusText = findViewById(R.id.statusText);
-        sensorStatusText = findViewById(R.id.sensorStatusText);
-        TextView conditionDescriptionText = findViewById(R.id.conditionDescriptionText);
-        Button lockTestButton = findViewById(R.id.lockTestButton);
-        updateDebugVisibility(sensorStatusText, conditionDescriptionText, lockTestButton);
-        new Handler(Looper.getMainLooper()).postDelayed(
-            () -> updateDebugVisibility(sensorStatusText, conditionDescriptionText, lockTestButton),
-            1000L);
         pocketSwitch = findViewById(R.id.pocketSwitch);
         Button adminButton = findViewById(R.id.adminButton);
         Button uninstallButton = findViewById(R.id.uninstallButton);
+        Button diagnosticsButton = findViewById(R.id.diagnosticsButton);
         RadioGroup sensitivityGroup = findViewById(R.id.sensitivityGroup);
         RadioButton normalRadio = findViewById(R.id.normalSensitivity);
         RadioButton sensitiveRadio = findViewById(R.id.sensitiveSensitivity);
         TextView privacyPolicyLink = findViewById(R.id.privacyPolicyLink);
+        final boolean[] restoringSensitivity = {false};
         boolean sensitive = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SENSITIVE, false);
         sensitivityGroup.check(sensitive ? sensitiveRadio.getId() : normalRadio.getId());
         sensitivityGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            if (restoringSensitivity[0]) {
+                return;
+            }
             if (checkedId != sensitiveRadio.getId()) {
                 saveSensitivity(false);
                 return;
             }
-            new android.app.AlertDialog.Builder(this)
+            android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                     .setTitle("민감 모드 사용")
                     .setMessage("민감 모드에서는 근접센서에 의해 사용 중인 화면이 닫힐 수 있습니다. 설정하시겠습니까?")
-                    .setNegativeButton("취소", (dialog, which) -> group.check(normalRadio.getId()))
-                    .setPositiveButton("설정", (dialog, which) -> saveSensitivity(true))
-                    .show();
+                    .setNegativeButton("취소", null)
+                    .setPositiveButton("설정", (ignoredDialog, which) -> saveSensitivity(true))
+                    .create();
+            dialog.setOnShowListener(ignored -> dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)
+                    .setOnClickListener(view -> {
+                        restoringSensitivity[0] = true;
+                        group.check(normalRadio.getId());
+                        restoringSensitivity[0] = false;
+                        saveSensitivity(false);
+                        dialog.dismiss();
+                    }));
+            dialog.setOnCancelListener(ignored -> {
+                restoringSensitivity[0] = true;
+                group.check(normalRadio.getId());
+                restoringSensitivity[0] = false;
+                saveSensitivity(false);
+            });
+            dialog.show();
         });
 
         adminButton.setOnClickListener(view -> requestAdminAccess());
-        lockTestButton.setOnClickListener(view -> testDeviceLock());
         uninstallButton.setOnClickListener(view -> prepareForUninstall());
+        diagnosticsButton.setOnClickListener(view -> startActivity(
+            new Intent(this, DiagnosticsActivity.class)));
         privacyPolicyLink.setOnClickListener(view -> startActivity(
             new Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL))));
         pocketSwitch.setOnCheckedChangeListener((button, checked) -> {
@@ -109,14 +108,6 @@ public class MainActivity extends Activity {
                     "주머니에서 화면이 눌리지 않도록 화면을 즉시 잠그는 권한입니다.");
             startActivityForResult(intent, ADMIN_REQUEST);
         }
-    }
-
-    private void testDeviceLock() {
-        if (!devicePolicyManager.isAdminActive(adminComponent)) {
-            statusText.setText("먼저 기기 관리자 권한을 허용해 주세요.");
-            return;
-        }
-        devicePolicyManager.lockNow();
     }
 
     private void setPocketMode(boolean enabled) {
@@ -190,14 +181,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        updateDebugVisibility(sensorStatusText, findViewById(R.id.conditionDescriptionText),
-            findViewById(R.id.lockTestButton));
-        IntentFilter sensorFilter = new IntentFilter(PocketLockService.ACTION_SENSOR_STATE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(sensorStateReceiver, sensorFilter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(sensorStateReceiver, sensorFilter);
-        }
         updateUi();
         boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
         boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
@@ -211,27 +194,4 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
-    protected void onPause() {
-        unregisterReceiver(sensorStateReceiver);
-        super.onPause();
-    }
-
-    private void updateSensorStatus(boolean proximityCovered, boolean upsideDown) {
-        boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
-        boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
-        sensorStatusText.setText("근접센서: " + (proximityCovered ? "가려짐" : "노출됨")
-                + "\n방향: " + (upsideDown ? "세로 뒤집힘" : "일반")
-                + "\n관리자: " + (adminActive ? "허용됨" : "허용 필요")
-                + "\n서비스: " + (enabled ? "활성화" : "비활성화"));
-    }
-
-        private void updateDebugVisibility(
-            TextView sensorStatus, TextView conditionDescription, Button lockTestButton) {
-        int visibility = BuildConfig.DEBUG && Debug.isDebuggerConnected()
-                ? View.VISIBLE : View.GONE;
-        sensorStatus.setVisibility(visibility);
-        conditionDescription.setVisibility(visibility);
-        lockTestButton.setVisibility(visibility);
-    }
 }
