@@ -45,6 +45,75 @@
         <TextView android:id="@+id/lightText" style="@style/DiagnosticSection" android:layout_marginTop="20dp" android:text="조도 센서" />
         <TableLayout android:id="@+id/lightValues" style="@style/DiagnosticTable" android:layout_marginTop="8dp" />
         <TextView
+            style="@style/DiagnosticSection"
+            android:layout_marginTop="20dp"
+            android:text="센서 테스트" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/lavender_card"
+            android:orientation="vertical"
+            android:padding="12dp">
+            <TextView
+                android:id="@+id/sensorTestStatus"
+                style="@style/LockStatus"
+                android:text="센서 테스트: STOPPED" />
+            <TextView
+                android:id="@+id/sensorTestElapsed"
+                style="@style/LockStatus"
+                android:text="경과 시간: 00:00" />
+            <Button
+                android:id="@+id/sensorTestButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/lavender_button"
+                android:elevation="0dp"
+                android:minHeight="56dp"
+                android:stateListAnimator="@null"
+                android:text="센서 테스트 시작"
+                android:textAllCaps="false"
+                android:textColor="@color/ink"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+            <Button
+                android:id="@+id/resetMeasurementsButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/lavender_flat_button"
+                android:elevation="0dp"
+                android:minHeight="52dp"
+                android:stateListAnimator="@null"
+                android:text="측정값 초기화"
+                android:textAllCaps="false"
+                android:textColor="@color/ink"
+                android:textSize="16sp" />
+        </LinearLayout>
+        <TextView
+            style="@style/DiagnosticSection"
+            android:layout_marginTop="20dp"
+            android:text="센서 이벤트 로그" />
+        <ScrollView
+            android:id="@+id/eventLogScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/lavender_card"
+            android:fillViewport="true"
+            android:padding="12dp">
+            <TextView
+                android:id="@+id/eventLogText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text="기록된 센서 이벤트가 없습니다."
+                android:textColor="@color/ink"
+                android:textSize="12sp"
+                android:lineSpacingExtra="2dp" />
+        </ScrollView>
+        <TextView
             android:id="@+id/lockTestTitle"
             style="@style/DiagnosticSection"
             android:layout_marginTop="20dp"

@@ -13,18 +13,26 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayDeque;
 import java.util.Date;
+import java.util.Deque;
 import java.util.Locale;
 
 public class DiagnosticsActivity extends Activity implements SensorEventListener {
+    private static final int MAX_EVENT_LOG_SIZE = 200;
+    private static final long ACCELEROMETER_LOG_INTERVAL_MILLIS = 400L;
+    private static final long TEST_TIMER_INTERVAL_MILLIS = 1000L;
     private SensorManager sensorManager;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
@@ -37,7 +45,26 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
     private TableLayout accelerometerValues;
     private TableLayout lightValues;
     private TextView lockTestStatus;
+    private TextView sensorTestStatus;
+    private TextView sensorTestElapsed;
+    private TextView eventLogText;
+    private ScrollView eventLogScrollView;
+    private Button sensorTestButton;
     private boolean listenersRegistered;
+    private boolean sensorTestRunning;
+    private long sensorTestStartedAt;
+    private long lastAccelerometerLogAt;
+    private final Deque<String> eventLog = new ArrayDeque<>();
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable testTimer = new Runnable() {
+        @Override
+        public void run() {
+            updateTestControls();
+            if (sensorTestRunning) {
+                handler.postDelayed(this, TEST_TIMER_INTERVAL_MILLIS);
+            }
+        }
+    };
     private float proximityValue;
     private float accelerometerX;
     private float accelerometerY;
@@ -46,6 +73,12 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
     private int proximityEventCount;
     private int accelerometerEventCount;
     private int lightEventCount;
+    private float proximityMinimum;
+    private float proximityMaximumObserved;
+    private float lightMinimum;
+    private float lightMaximumObserved;
+    private boolean hasProximityValue;
+    private boolean hasLightValue;
     private String proximityLastEvent = "-";
     private String accelerometerLastEvent = "-";
     private String lightLastEvent = "-";
@@ -71,12 +104,20 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
         accelerometerValues = findViewById(R.id.accelerometerValues);
         lightValues = findViewById(R.id.lightValues);
         lockTestStatus = findViewById(R.id.lockTestStatus);
+        sensorTestStatus = findViewById(R.id.sensorTestStatus);
+        sensorTestElapsed = findViewById(R.id.sensorTestElapsed);
+        eventLogText = findViewById(R.id.eventLogText);
+        eventLogScrollView = findViewById(R.id.eventLogScrollView);
+        sensorTestButton = findViewById(R.id.sensorTestButton);
 
         findViewById(R.id.backButton).setOnClickListener(view -> finish());
         Button lockTestButton = findViewById(R.id.lockTestButton);
         lockTestButton.setOnClickListener(view -> testDeviceLock());
         View copyButton = findViewById(R.id.copyButton);
         copyButton.setOnClickListener(view -> copyDiagnostics());
+        findViewById(R.id.resetMeasurementsButton).setOnClickListener(
+            view -> resetMeasurements());
+        sensorTestButton.setOnClickListener(view -> toggleSensorTest());
         updateAllViews();
     }
 
@@ -91,6 +132,12 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
     protected void onPause() {
         unregisterSensorListeners();
         super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacks(testTimer);
+        super.onDestroy();
     }
 
     private void registerSensorListeners() {
@@ -122,13 +169,24 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
                 || event.values.length == 0) {
             return;
         }
-        String eventTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-                .format(new Date());
+        if (!sensorTestRunning) {
+            return;
+        }
+        String eventTime = formatEventTime();
         switch (event.sensor.getType()) {
             case Sensor.TYPE_PROXIMITY:
                 proximityValue = event.values[0];
                 proximityEventCount++;
+                if (!hasProximityValue) {
+                    proximityMinimum = proximityValue;
+                    proximityMaximumObserved = proximityValue;
+                    hasProximityValue = true;
+                } else {
+                    proximityMinimum = Math.min(proximityMinimum, proximityValue);
+                    proximityMaximumObserved = Math.max(proximityMaximumObserved, proximityValue);
+                }
                 proximityLastEvent = eventTime;
+                addEventLog(eventTime + "  PROXIMITY   " + format(proximityValue));
                 break;
             case Sensor.TYPE_ACCELEROMETER:
                 if (event.values.length >= 3) {
@@ -138,11 +196,26 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
                 }
                 accelerometerEventCount++;
                 accelerometerLastEvent = eventTime;
+                if (System.currentTimeMillis() - lastAccelerometerLogAt
+                        >= ACCELEROMETER_LOG_INTERVAL_MILLIS) {
+                    lastAccelerometerLogAt = System.currentTimeMillis();
+                    addEventLog(eventTime + "  ACCEL       X=" + format(accelerometerX)
+                            + " Y=" + format(accelerometerY) + " Z=" + format(accelerometerZ));
+                }
                 break;
             case Sensor.TYPE_LIGHT:
                 lightValue = event.values[0];
                 lightEventCount++;
+                if (!hasLightValue) {
+                    lightMinimum = lightValue;
+                    lightMaximumObserved = lightValue;
+                    hasLightValue = true;
+                } else {
+                    lightMinimum = Math.min(lightMinimum, lightValue);
+                    lightMaximumObserved = Math.max(lightMaximumObserved, lightValue);
+                }
                 lightLastEvent = eventTime;
+                addEventLog(eventTime + "  LIGHT       " + format(lightValue) + " lux");
                 break;
             default:
                 return;
@@ -162,6 +235,8 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
         addRow(deviceInfoValues, "SDK", String.valueOf(Build.VERSION.SDK_INT));
         updateAdminView();
         updateSensorViews();
+        updateTestControls();
+        updateEventLogView();
     }
 
     private void updateAdminView() {
@@ -198,6 +273,8 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
         addRow(proximityValues, "해상도", format(proximitySensor.getResolution()));
         addRow(proximityValues, "전력", format(proximitySensor.getPower()) + " mA");
         addRow(proximityValues, "현재값", proximityEventCount == 0 ? "-" : format(proximityValue) + " cm");
+        addRow(proximityValues, "최소값", proximityEventCount == 0 ? "-" : format(proximityMinimum) + " cm");
+        addRow(proximityValues, "최대 관측값", proximityEventCount == 0 ? "-" : format(proximityMaximumObserved) + " cm");
         addRow(proximityValues, "상태 판정", coverStatus);
         addRow(proximityValues, "이벤트 횟수", String.valueOf(proximityEventCount));
         addRow(proximityValues, "최근 이벤트", proximityLastEvent);
@@ -219,6 +296,8 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
         addRow(accelerometerValues, "상태", accelerometerEventCount == 0
                 ? "확인 필요 · 이벤트 없음" : "정상 · 감지됨");
         addRow(accelerometerValues, "이름", valueOrDash(accelerometer.getName()));
+        addRow(accelerometerValues, "제조사", valueOrDash(accelerometer.getVendor()));
+        addRow(accelerometerValues, "최대 범위", format(accelerometer.getMaximumRange()));
         addRow(accelerometerValues, "X", accelerometerEventCount == 0 ? "-" : format(accelerometerX));
         addRow(accelerometerValues, "Y", accelerometerEventCount == 0 ? "-" : format(accelerometerY));
         addRow(accelerometerValues, "Z", accelerometerEventCount == 0 ? "-" : format(accelerometerZ));
@@ -236,13 +315,97 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
         addRow(lightValues, "상태", lightEventCount == 0
                 ? "확인 필요 · 이벤트 없음" : "정상 · 감지됨");
         addRow(lightValues, "이름", valueOrDash(lightSensor.getName()));
+        addRow(lightValues, "제조사", valueOrDash(lightSensor.getVendor()));
+        addRow(lightValues, "최대 범위", format(lightSensor.getMaximumRange()) + " lux");
         addRow(lightValues, "현재값", lightEventCount == 0 ? "-" : format(lightValue) + " lux");
+        addRow(lightValues, "최소값", lightEventCount == 0 ? "-" : format(lightMinimum) + " lux");
+        addRow(lightValues, "최대 관측값", lightEventCount == 0 ? "-" : format(lightMaximumObserved) + " lux");
         addRow(lightValues, "이벤트 횟수", String.valueOf(lightEventCount));
         addRow(lightValues, "최근 이벤트", lightLastEvent);
     }
 
     private void clearTable(TableLayout table) {
         table.removeAllViews();
+    }
+
+    private void toggleSensorTest() {
+        if (sensorTestRunning) {
+            sensorTestRunning = false;
+            addEventLog(formatEventTime() + "  === TEST END ===");
+            handler.removeCallbacks(testTimer);
+        } else {
+            sensorTestRunning = true;
+            sensorTestStartedAt = System.currentTimeMillis();
+            lastAccelerometerLogAt = 0L;
+            addEventLog(formatEventTime() + "  === TEST START ===");
+            handler.post(testTimer);
+        }
+        updateTestControls();
+        updateEventLogView();
+    }
+
+    private void resetMeasurements() {
+        sensorTestRunning = false;
+        handler.removeCallbacks(testTimer);
+        proximityEventCount = 0;
+        accelerometerEventCount = 0;
+        lightEventCount = 0;
+        proximityValue = 0f;
+        accelerometerX = 0f;
+        accelerometerY = 0f;
+        accelerometerZ = 0f;
+        lightValue = 0f;
+        proximityMinimum = 0f;
+        proximityMaximumObserved = 0f;
+        lightMinimum = 0f;
+        lightMaximumObserved = 0f;
+        hasProximityValue = false;
+        hasLightValue = false;
+        proximityLastEvent = "-";
+        accelerometerLastEvent = "-";
+        lightLastEvent = "-";
+        eventLog.clear();
+        updateAllViews();
+    }
+
+    private void addEventLog(String entry) {
+        eventLog.addLast(entry);
+        while (eventLog.size() > MAX_EVENT_LOG_SIZE) {
+            eventLog.removeFirst();
+        }
+        updateEventLogView();
+    }
+
+    private void updateEventLogView() {
+        if (eventLog.isEmpty()) {
+            eventLogText.setText("기록된 센서 이벤트가 없습니다.");
+            return;
+        }
+        StringBuilder logText = new StringBuilder();
+        for (String entry : eventLog) {
+            if (logText.length() > 0) {
+                logText.append('\n');
+            }
+            logText.append(entry);
+        }
+        eventLogText.setText(logText.toString());
+        eventLogScrollView.post(() -> eventLogScrollView.fullScroll(View.FOCUS_DOWN));
+    }
+
+    private void updateTestControls() {
+        sensorTestStatus.setText("센서 테스트: " + (sensorTestRunning ? "RUNNING" : "STOPPED"));
+        long elapsed = sensorTestRunning ? System.currentTimeMillis() - sensorTestStartedAt : 0L;
+        sensorTestElapsed.setText("경과 시간: " + formatDuration(elapsed));
+        sensorTestButton.setText(sensorTestRunning ? "센서 테스트 종료" : "센서 테스트 시작");
+    }
+
+    private String formatDuration(long durationMillis) {
+        long totalSeconds = durationMillis / 1000L;
+        return String.format(Locale.US, "%02d:%02d", totalSeconds / 60L, totalSeconds % 60L);
+    }
+
+    private String formatEventTime() {
+        return new SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(new Date());
     }
 
     private void addRow(TableLayout table, String label, String value) {
@@ -293,13 +456,24 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
                 + "Device Admin\nActive: " + (isAdminActive() ? "YES" : "NO") + "\n\n"
                 + "Proximity Sensor\n" + sensorSummary(proximitySensor, proximityEventCount)
                 + "Current Value: " + (proximityEventCount == 0 ? "-" : format(proximityValue)) + "\n\n"
+                + "Minimum Value: " + (proximityEventCount == 0 ? "-" : format(proximityMinimum)) + "\n"
+                + "Maximum Observed Value: " + (proximityEventCount == 0 ? "-" : format(proximityMaximumObserved)) + "\n"
+                + "Last Event: " + proximityLastEvent + "\n\n"
                 + "Accelerometer\n" + sensorSummary(accelerometer, accelerometerEventCount)
                 + "Current Value: " + (accelerometerEventCount == 0 ? "-"
                 : "X=" + format(accelerometerX) + ", Y=" + format(accelerometerY)
-                + ", Z=" + format(accelerometerZ)) + "\n\n"
+                + ", Z=" + format(accelerometerZ)) + "\n"
+                + "Last Event: " + accelerometerLastEvent + "\n\n"
                 + "Light Sensor\n" + sensorSummary(lightSensor, lightEventCount)
-                + "Current Value: " + (lightEventCount == 0 ? "-" : format(lightValue)) + " lux\n\n"
-                + "Lock Test\nDevice Admin Available: " + (isAdminActive() ? "YES" : "NO");
+                + "Current Value: " + (lightEventCount == 0 ? "-" : format(lightValue)) + " lux\n"
+                + "Minimum Value: " + (lightEventCount == 0 ? "-" : format(lightMinimum)) + " lux\n"
+                + "Maximum Observed Value: " + (lightEventCount == 0 ? "-" : format(lightMaximumObserved)) + " lux\n"
+                + "Last Event: " + lightLastEvent + "\n\n"
+                + "Lock Test\nDevice Admin Available: " + (isAdminActive() ? "YES" : "NO") + "\n\n"
+                + "Sensor Test\nStatus: " + (sensorTestRunning ? "RUNNING" : "STOPPED") + "\n"
+                + "Duration: " + formatDuration(sensorTestRunning
+                ? System.currentTimeMillis() - sensorTestStartedAt : 0L) + "\n\n"
+                + "센서 이벤트 로그\n" + eventLogText.getText().toString();
     }
 
     private String sensorSummary(Sensor sensor, int eventCount) {
