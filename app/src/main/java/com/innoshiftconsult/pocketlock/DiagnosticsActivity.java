@@ -13,6 +13,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Build;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -74,7 +75,7 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
         findViewById(R.id.backButton).setOnClickListener(view -> finish());
         Button lockTestButton = findViewById(R.id.lockTestButton);
         lockTestButton.setOnClickListener(view -> testDeviceLock());
-        Button copyButton = findViewById(R.id.copyButton);
+        View copyButton = findViewById(R.id.copyButton);
         copyButton.setOnClickListener(view -> copyDiagnostics());
         updateAllViews();
     }
