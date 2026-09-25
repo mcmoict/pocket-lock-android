@@ -144,10 +144,17 @@ public class PocketLockService extends Service implements SensorEventListener {
 
     private Notification buildNotification() {
         Intent launchIntent = new Intent(this, MainActivity.class);
+        int pendingIntentFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            pendingIntentFlags |= PendingIntent.FLAG_IMMUTABLE;
+        }
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        return new Notification.Builder(this, CHANNEL_ID)
+                pendingIntentFlags);
+        Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                ? new Notification.Builder(this, CHANNEL_ID)
+                : new Notification.Builder(this);
+        return builder
                 .setSmallIcon(android.R.drawable.ic_lock_lock)
                 .setContentTitle("Pocket Lock 활성화됨")
                 .setContentText("근접 센서를 감시하고 있습니다")

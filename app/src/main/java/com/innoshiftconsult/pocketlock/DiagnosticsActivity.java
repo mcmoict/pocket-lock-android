@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ScrollView;
@@ -109,6 +110,16 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
         eventLogText = findViewById(R.id.eventLogText);
         eventLogScrollView = findViewById(R.id.eventLogScrollView);
         sensorTestButton = findViewById(R.id.sensorTestButton);
+        eventLogScrollView.setOnTouchListener((view, event) -> {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN
+                    || event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+                view.getParent().requestDisallowInterceptTouchEvent(true);
+            } else if (event.getActionMasked() == MotionEvent.ACTION_UP
+                    || event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                view.getParent().requestDisallowInterceptTouchEvent(false);
+            }
+            return false;
+        });
 
         findViewById(R.id.backButton).setOnClickListener(view -> finish());
         Button lockTestButton = findViewById(R.id.lockTestButton);
@@ -412,12 +423,12 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
         TableRow row = new TableRow(this);
         TextView labelView = new TextView(this);
         labelView.setText(label);
-        labelView.setTextColor(getColor(R.color.ink));
+        labelView.setTextColor(getResources().getColor(R.color.ink));
         labelView.setTextSize(14);
         labelView.setPadding(4, 3, 16, 3);
         TextView valueView = new TextView(this);
         valueView.setText(value);
-        valueView.setTextColor(getColor(R.color.ink));
+        valueView.setTextColor(getResources().getColor(R.color.ink));
         valueView.setTextSize(14);
         valueView.setPadding(4, 3, 4, 3);
         row.addView(labelView, new TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 0.27f));

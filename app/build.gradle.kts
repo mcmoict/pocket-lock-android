@@ -20,10 +20,10 @@ android {
 
     defaultConfig {
         applicationId = "com.innoshiftconsult.pocketlock"
-        minSdk = 26
+        minSdk = 22
         targetSdk = 36
         versionCode = 24
-        versionName = "1.0.3"
+        versionName = "1.0.4"
     }
 
     signingConfigs {

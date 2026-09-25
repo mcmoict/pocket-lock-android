@@ -130,6 +130,8 @@
                 android:text="주머니 잠금 켜기"
                 android:textColor="@color/white"
                 android:textSize="20sp"
+                android:thumbTint="@color/pocket_switch_thumb"
+                android:trackTint="@color/pocket_switch_track"
                 android:textStyle="bold" />
 
             <RadioGroup
