@@ -15,6 +15,8 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.net.Uri;
 import android.widget.Button;
@@ -27,6 +29,7 @@ import android.view.View;
 public class MainActivity extends Activity implements SensorEventListener {
     private static final int ADMIN_REQUEST = 100;
     private static final long PROXIMITY_DEBOUNCE_MS = 400L;
+    private static final long USAGE_GUIDE_INTERVAL_MILLIS = 7000L;
     private static final String PRIVACY_POLICY_URL =
             "https://mcmoict.github.io/pocket-lock-android/privacy-policy.html";
     private static final String PREFS = "pocket_lock";
@@ -39,6 +42,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     private TextView statusText;
     private TextView detectionModeValue;
     private TextView detectionModeGuide;
+    private TextView usageGuideText;
     private Button detectionModeButton;
     private boolean detectionTestRunning;
     private boolean detectionListenersRegistered;
@@ -46,6 +50,17 @@ public class MainActivity extends Activity implements SensorEventListener {
     private int nearDetectedCount;
     private int farDetectedCount;
     private long lastProximityTransitionAt;
+    private int usageGuideMessageIndex;
+    private final Handler usageGuideHandler = new Handler(Looper.getMainLooper());
+    private final Runnable usageGuideRotation = new Runnable() {
+        @Override
+        public void run() {
+            if (!isFinishing()) {
+                showNextUsageGuideMessage();
+                usageGuideHandler.postDelayed(this, USAGE_GUIDE_INTERVAL_MILLIS);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +77,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         pocketSwitch = findViewById(R.id.pocketSwitch);
         detectionModeValue = findViewById(R.id.detectionModeValue);
         detectionModeGuide = findViewById(R.id.detectionModeGuide);
+        usageGuideText = findViewById(R.id.usageGuideText);
         detectionModeButton = findViewById(R.id.detectionModeButton);
         Button adminButton = findViewById(R.id.adminButton);
         Button uninstallButton = findViewById(R.id.uninstallButton);
@@ -109,6 +125,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         diagnosticsButton.setOnClickListener(view -> startActivity(
             new Intent(this, DiagnosticsActivity.class)));
         detectionModeButton.setOnClickListener(view -> toggleDetectionModeTest());
+        usageGuideText.setOnClickListener(view -> showUsageGuideDialog());
         privacyPolicyLink.setOnClickListener(view -> startActivity(
             new Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL))));
         pocketSwitch.setOnCheckedChangeListener((button, checked) -> {
@@ -192,7 +209,59 @@ public class MainActivity extends Activity implements SensorEventListener {
         ProximityReliabilityManager.set(this, reliability);
         detectionModeGuide.setVisibility(View.GONE);
         updateDetectionModeSummary(reliability);
+        startUsageGuideRotation();
         updateUi();
+    }
+
+    private void startUsageGuideRotation() {
+        usageGuideHandler.removeCallbacks(usageGuideRotation);
+        if (ProximityReliabilityManager.get(this) == ProximityReliability.UNKNOWN) {
+            usageGuideMessageIndex = 1;
+        } else {
+            usageGuideMessageIndex = 0;
+        }
+        showUsageGuideMessage(usageGuideMessageIndex);
+        usageGuideHandler.postDelayed(usageGuideRotation, USAGE_GUIDE_INTERVAL_MILLIS);
+    }
+
+    private void showNextUsageGuideMessage() {
+        if (ProximityReliabilityManager.get(this) == ProximityReliability.UNKNOWN) {
+            usageGuideMessageIndex = 1;
+        } else {
+            usageGuideMessageIndex = (usageGuideMessageIndex + 1) % 3;
+        }
+        showUsageGuideMessage(usageGuideMessageIndex);
+    }
+
+    private void showUsageGuideMessage(int messageIndex) {
+        String message;
+        if (messageIndex == 0) {
+            message = "앱 삭제 전 [앱 삭제 준비]에서 기기 관리자 권한을 해제해 주세요.";
+        } else if (messageIndex == 1) {
+            message = "앱 사용 전 [판단하기]로 주머니 감지 방식을 먼저 확인해 주세요.";
+        } else {
+            message = "잠금이 안 되면 [기기 진단]에서 근접 센서를 테스트해 주세요.";
+        }
+
+        usageGuideText.animate()
+                .alpha(0f)
+                .setDuration(180L)
+                .withEndAction(() -> {
+                    usageGuideText.setText(message);
+                    //usageGuideText.setText("💡 " + message);
+                    usageGuideText.animate().alpha(1f).setDuration(180L).start();
+                })
+                .start();
+    }
+
+    private void showUsageGuideDialog() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("사용 안내")
+                .setMessage("① 처음 사용하신다면 [판단하기]로 주머니 감지 방식을 먼저 확인해 주세요.\n\n"
+                        + "② 자동 잠금이 정상적으로 작동하지 않으면 [기기 진단]에서 근접 센서를 테스트하고 진단 결과를 개발자에게 보내주세요.\n\n"
+                        + "③ 앱을 삭제하려면 먼저 [앱 삭제 준비]를 눌러 기기 관리자 권한을 해제해 주세요.")
+                .setPositiveButton("확인", null)
+                .show();
     }
 
     private void registerDetectionSensor() {
@@ -284,6 +353,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onResume() {
         super.onResume();
+        startUsageGuideRotation();
         if (detectionTestRunning) {
             registerDetectionSensor();
         }
@@ -302,8 +372,15 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     @Override
     protected void onPause() {
+        usageGuideHandler.removeCallbacks(usageGuideRotation);
         unregisterDetectionSensor();
         super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        usageGuideHandler.removeCallbacksAndMessages(null);
+        super.onDestroy();
     }
 
     @Override

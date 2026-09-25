@@ -9,9 +9,9 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="22dp"
-        android:paddingTop="20dp"
+        android:paddingTop="18dp"
         android:paddingEnd="22dp"
-        android:paddingBottom="28dp">
+        android:paddingBottom="20dp">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
@@ -34,27 +34,27 @@
                 android:textSize="27sp"
                 android:textStyle="bold" />
         </LinearLayout>
-        <TextView android:id="@+id/deviceInfoText" style="@style/DiagnosticSection" android:layout_marginTop="20dp" android:text="기기 정보" />
-        <TableLayout android:id="@+id/deviceInfoValues" style="@style/DiagnosticTable" android:layout_marginTop="8dp" />
-        <TextView android:id="@+id/adminText" style="@style/DiagnosticSection" android:layout_marginTop="20dp" android:text="기기 관리자" />
-        <TableLayout android:id="@+id/adminValues" style="@style/DiagnosticTable" android:layout_marginTop="8dp" />
-        <TextView android:id="@+id/proximityText" style="@style/DiagnosticSection" android:layout_marginTop="20dp" android:text="근접 센서" />
-        <TableLayout android:id="@+id/proximityValues" style="@style/DiagnosticTable" android:layout_marginTop="8dp" />
-        <TextView android:id="@+id/accelerometerText" style="@style/DiagnosticSection" android:layout_marginTop="20dp" android:text="가속도 센서" />
-        <TableLayout android:id="@+id/accelerometerValues" style="@style/DiagnosticTable" android:layout_marginTop="8dp" />
-        <TextView android:id="@+id/lightText" style="@style/DiagnosticSection" android:layout_marginTop="20dp" android:text="조도 센서" />
-        <TableLayout android:id="@+id/lightValues" style="@style/DiagnosticTable" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/deviceInfoText" style="@style/DiagnosticSection" android:layout_marginTop="14dp" android:text="기기 정보" />
+        <TableLayout android:id="@+id/deviceInfoValues" style="@style/DiagnosticTable" android:layout_marginTop="6dp" />
+        <TextView android:id="@+id/adminText" style="@style/DiagnosticSection" android:layout_marginTop="14dp" android:text="기기 관리자" />
+        <TableLayout android:id="@+id/adminValues" style="@style/DiagnosticTable" android:layout_marginTop="6dp" />
+        <TextView android:id="@+id/proximityText" style="@style/DiagnosticSection" android:layout_marginTop="14dp" android:text="근접 센서" />
+        <TableLayout android:id="@+id/proximityValues" style="@style/DiagnosticTable" android:layout_marginTop="6dp" />
+        <TextView android:id="@+id/accelerometerText" style="@style/DiagnosticSection" android:layout_marginTop="14dp" android:text="가속도 센서" />
+        <TableLayout android:id="@+id/accelerometerValues" style="@style/DiagnosticTable" android:layout_marginTop="6dp" />
+        <TextView android:id="@+id/lightText" style="@style/DiagnosticSection" android:layout_marginTop="14dp" android:text="조도 센서" />
+        <TableLayout android:id="@+id/lightValues" style="@style/DiagnosticTable" android:layout_marginTop="6dp" />
                 <TextView
             style="@style/DiagnosticSection"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="14dp"
             android:text="센서 테스트" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:background="@drawable/lavender_card"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="10dp">
             <TextView
                 android:id="@+id/sensorTestStatus"
                 style="@style/LockStatus"
@@ -93,13 +93,13 @@
         </LinearLayout>
         <TextView
             style="@style/DiagnosticSection"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="14dp"
             android:text="센서 이벤트 로그" />
         <ScrollView
             android:id="@+id/eventLogScrollView"
             android:layout_width="match_parent"
             android:layout_height="240dp"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:background="@drawable/lavender_card"
             android:fillViewport="true"
             android:nestedScrollingEnabled="true"
@@ -117,15 +117,15 @@
         <TextView
             android:id="@+id/lockTestTitle"
             style="@style/DiagnosticSection"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="14dp"
             android:text="화면 잠금 기능" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:background="@drawable/lavender_card"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="10dp">
             <TextView
                 android:id="@+id/lockTestStatus"
                 style="@style/LockStatus" />
@@ -148,8 +148,8 @@
             android:id="@+id/copyButton"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp"
             android:background="@drawable/lavender_button"
             android:clickable="true"
             android:focusable="true"
