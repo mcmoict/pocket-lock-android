@@ -40,8 +40,8 @@ public class ProximityReliabilityManagerTest {
         detector.onLight(180f, 300L);
         detector.onLight(15f, 700L);
         detector.onLight(2f, 900L);
-        detector.onAccelerometer(0.2f, 0.3f, 9.4f, 850L);
-        detector.onAccelerometer(0.4f, 0.2f, 9.2f, 1000L);
+        detector.onAccelerometer(0.2f, -9.4f, 0.3f, 850L);
+        detector.onAccelerometer(0.4f, -9.2f, 0.2f, 1000L);
 
         assertTrue(detector.shouldLock());
     }

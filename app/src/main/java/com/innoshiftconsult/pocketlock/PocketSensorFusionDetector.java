@@ -7,18 +7,17 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 public class PocketSensorFusionDetector {
-    private static final long LIGHT_WINDOW_MS = 3000L;
-    private static final long MOTION_WINDOW_MS = 2000L;
-    private static final long EVENT_CORRELATION_WINDOW_MS = 2000L;
-    private static final long POCKET_CONFIRMATION_MS = 800L;
+    private static final long LIGHT_WINDOW_MS = 6000L;
+    private static final long MOTION_WINDOW_MS = 5000L;
+    private static final long EVENT_CORRELATION_WINDOW_MS = 5000L;
+    private static final long POCKET_CONFIRMATION_MS = 600L;
     private static final long LOCK_COOLDOWN_MS = 3000L;
 
-    private static final float DARK_LUX_THRESHOLD = 5.0f;
+    private static final float DARK_LUX_THRESHOLD = 30.0f;
     private static final float MIN_BASELINE_LUX = 20.0f;
-    private static final float LIGHT_DROP_RATIO = 0.10f;
-    private static final float MOTION_THRESHOLD = 0.50f;
-    private static final float ORIENTATION_VERTICAL_THRESHOLD = 4.5f;
-    private static final float ORIENTATION_TILT_THRESHOLD = 2.0f;
+    private static final float LIGHT_DROP_RATIO = 0.50f;
+    private static final float MOTION_THRESHOLD = 0.25f;
+    private static final float ORIENTATION_VERTICAL_THRESHOLD = 3.0f;
 
     private final Deque<LuxSample> recentLuxSamples = new ArrayDeque<>();
     private final Deque<MotionSample> recentMotionSamples = new ArrayDeque<>();
@@ -71,9 +70,9 @@ public class PocketSensorFusionDetector {
         LuxSample latestLux = recentLuxSamples.peekLast();
         float recentMaxLux = recentMaxLux();
         float currentLux = latestLux != null ? latestLux.lux : 0f;
-        boolean darkTransition = recentMaxLux >= MIN_BASELINE_LUX
-                && currentLux <= DARK_LUX_THRESHOLD
-                && currentLux <= recentMaxLux * LIGHT_DROP_RATIO;
+        boolean hasBrightBaseline = recentMaxLux >= MIN_BASELINE_LUX;
+        boolean darkTransition = currentLux <= DARK_LUX_THRESHOLD
+            && (!hasBrightBaseline || currentLux <= recentMaxLux * LIGHT_DROP_RATIO);
         boolean recentMotion = hasRecentMotion(nowMs);
         boolean pocketLikeOrientation = isPocketLikeOrientation();
         return darkTransition && recentMotion && pocketLikeOrientation;
@@ -111,11 +110,8 @@ public class PocketSensorFusionDetector {
         float absX = Math.abs(currentX);
         float absY = Math.abs(currentY);
         float absZ = Math.abs(currentZ);
-        if (absZ < ORIENTATION_VERTICAL_THRESHOLD) {
-            return false;
-        }
-        return absX < ORIENTATION_TILT_THRESHOLD && absY < ORIENTATION_TILT_THRESHOLD
-                || absX < ORIENTATION_VERTICAL_THRESHOLD && absY < ORIENTATION_VERTICAL_THRESHOLD;
+        return currentY <= -ORIENTATION_VERTICAL_THRESHOLD
+            && absY >= Math.min(absX, absZ);
     }
 
     private void pruneLuxSamples(long nowMs) {

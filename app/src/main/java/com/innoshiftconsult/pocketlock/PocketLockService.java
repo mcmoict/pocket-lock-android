@@ -51,7 +51,8 @@ public class PocketLockService extends Service implements SensorEventListener {
     private Handler handler;
     private final Runnable lockAfterConfirmedCover = () -> {
         lockPending = false;
-        if (proximityCovered && (isSensitiveMode() || isUpsideDown)
+        if (proximityCovered && (currentDetectionMode == ProximityDetectionMode.SENSOR_FUSION
+            || isSensitiveMode() || isUpsideDown)
                 && !lockedForCurrentCover && devicePolicyManager.isAdminActive(adminComponent)) {
             lockedForCurrentCover = true;
             devicePolicyManager.lockNow();
@@ -147,7 +148,9 @@ public class PocketLockService extends Service implements SensorEventListener {
                 return;
         }
 
-        if (!proximityCovered || (!isSensitiveMode() && !isUpsideDown)) {
+        boolean requiresUpsideDown = currentDetectionMode == ProximityDetectionMode.PROXIMITY
+            && !isSensitiveMode();
+        if (!proximityCovered || (requiresUpsideDown && !isUpsideDown)) {
             lockedForCurrentCover = false;
             lockPending = false;
             handler.removeCallbacks(lockAfterConfirmedCover);
