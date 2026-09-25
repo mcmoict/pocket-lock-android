@@ -461,16 +461,12 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
         String buttonText = "근접 센서 테스트";
         if (reliability == ProximityReliability.RELIABLE) {
             currentStatus = "근접 센서 상태: 정상\n현재 값: " + formatNearestState() + "\nFAR → NEAR → FAR 변화를 정상적으로 확인했습니다.";
-            buttonText = "근접 센서 다시 테스트";
         } else if (reliability == ProximityReliability.UNRELIABLE) {
             currentStatus = "근접 센서 상태: 불안정\n현재 값: " + formatNearestState() + "\n근접 센서의 정상적인 상태 변화를 확인하지 못했습니다.";
-            buttonText = "근접 센서 다시 테스트";
         } else if (reliability == ProximityReliability.UNAVAILABLE) {
             currentStatus = "근접 센서 상태: 사용 불가\n현재 감지 방식: Sensor Fusion\n센서 자체가 없어 테스트를 건너뛰었습니다.";
-            buttonText = "근접 센서 다시 테스트";
         } else {
             currentStatus = "근접 센서 상태: 확인 필요\n통화할 때처럼 화면을 얼굴 쪽으로 가져갔다가 다시 떼어주세요.\nFAR → NEAR → FAR 변화를 확인해 주세요.";
-            buttonText = "근접 센서 테스트";
         }
         sensorTestStatus.setText(currentStatus);
         sensorTestElapsed.setText("경과 시간: 00:00");
