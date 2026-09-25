@@ -10,6 +10,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,9 +22,11 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.view.View;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements SensorEventListener {
     private static final int ADMIN_REQUEST = 100;
+    private static final long PROXIMITY_DEBOUNCE_MS = 400L;
     private static final String PRIVACY_POLICY_URL =
             "https://mcmoict.github.io/pocket-lock-android/privacy-policy.html";
     private static final String PREFS = "pocket_lock";
@@ -33,6 +37,15 @@ public class MainActivity extends Activity {
     private ComponentName adminComponent;
     private Switch pocketSwitch;
     private TextView statusText;
+    private TextView detectionModeValue;
+    private TextView detectionModeGuide;
+    private Button detectionModeButton;
+    private boolean detectionTestRunning;
+    private boolean detectionListenersRegistered;
+    private boolean lastProximityNear;
+    private int nearDetectedCount;
+    private int farDetectedCount;
+    private long lastProximityTransitionAt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +60,9 @@ public class MainActivity extends Activity {
         adminComponent = new ComponentName(this, PocketLockAdminReceiver.class);
         statusText = findViewById(R.id.statusText);
         pocketSwitch = findViewById(R.id.pocketSwitch);
+        detectionModeValue = findViewById(R.id.detectionModeValue);
+        detectionModeGuide = findViewById(R.id.detectionModeGuide);
+        detectionModeButton = findViewById(R.id.detectionModeButton);
         Button adminButton = findViewById(R.id.adminButton);
         Button uninstallButton = findViewById(R.id.uninstallButton);
         Button diagnosticsButton = findViewById(R.id.diagnosticsButton);
@@ -92,6 +108,7 @@ public class MainActivity extends Activity {
         uninstallButton.setOnClickListener(view -> prepareForUninstall());
         diagnosticsButton.setOnClickListener(view -> startActivity(
             new Intent(this, DiagnosticsActivity.class)));
+        detectionModeButton.setOnClickListener(view -> toggleDetectionModeTest());
         privacyPolicyLink.setOnClickListener(view -> startActivity(
             new Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL))));
         pocketSwitch.setOnCheckedChangeListener((button, checked) -> {
@@ -139,6 +156,77 @@ public class MainActivity extends Activity {
         updateUi();
     }
 
+    private void toggleDetectionModeTest() {
+        if (detectionTestRunning) {
+            finishDetectionModeTest();
+        } else {
+            beginDetectionModeTest();
+        }
+    }
+
+    private void beginDetectionModeTest() {
+        detectionTestRunning = true;
+        lastProximityNear = false;
+        nearDetectedCount = 0;
+        farDetectedCount = 0;
+        lastProximityTransitionAt = 0L;
+        detectionModeGuide.setVisibility(View.VISIBLE);
+        updateDetectionModeSummary();
+        registerDetectionSensor();
+    }
+
+    private void finishDetectionModeTest() {
+        detectionTestRunning = false;
+        unregisterDetectionSensor();
+
+        boolean proximityAvailable = sensorManager != null
+                && sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY) != null;
+        boolean validPattern = nearDetectedCount >= 2 && farDetectedCount >= 2;
+        ProximityReliability reliability;
+        if (!proximityAvailable) {
+            reliability = ProximityReliability.UNAVAILABLE;
+        } else {
+            reliability = validPattern
+                    ? ProximityReliability.RELIABLE : ProximityReliability.UNRELIABLE;
+        }
+        ProximityReliabilityManager.set(this, reliability);
+        detectionModeGuide.setVisibility(View.GONE);
+        updateDetectionModeSummary(reliability);
+        updateUi();
+    }
+
+    private void registerDetectionSensor() {
+        if (detectionListenersRegistered || sensorManager == null) {
+            return;
+        }
+        Sensor proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+        if (proximitySensor != null) {
+            sensorManager.registerListener(this, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+        detectionListenersRegistered = true;
+    }
+
+    private void unregisterDetectionSensor() {
+        if (detectionListenersRegistered && sensorManager != null) {
+            sensorManager.unregisterListener(this);
+            detectionListenersRegistered = false;
+        }
+    }
+
+    private void updateDetectionModeSummary() {
+        updateDetectionModeSummary(ProximityReliabilityManager.get(this));
+    }
+
+    private void updateDetectionModeSummary(ProximityReliability reliability) {
+        if (reliability == ProximityReliability.UNAVAILABLE
+                || reliability == ProximityReliability.UNRELIABLE) {
+            detectionModeValue.setText("복합 센서 방식");
+        } else {
+            detectionModeValue.setText("근접 센서 방식");
+        }
+        detectionModeButton.setText(detectionTestRunning ? "완료하기" : "판단하기");
+    }
+
     private void prepareForUninstall() {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(ENABLED, false).apply();
         stopService(new Intent(this, PocketLockService.class));
@@ -159,18 +247,30 @@ public class MainActivity extends Activity {
         boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
         boolean sensitive = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SENSITIVE, false);
         boolean proximityAvailable = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY) != null;
+        ProximityReliability proximityReliability = ProximityReliabilityManager.get(this);
+
         if (!adminActive) {
             statusText.setText("먼저 기기 관리자 권한을 허용해 주세요.");
-        } else if (!proximityAvailable) {
-            statusText.setText("이 휴대폰에는 근접센서가 없어 사용할 수 없습니다.");
-        } else if (enabled) {
-            statusText.setText(sensitive
-                    ? "감시 중 · 근접센서가 0.3초 이상 가려지면 화면을 잠급니다."
-                    : "감시 중 · 휴대폰이 세로로 뒤집히고 근접센서가 0.5초 이상 가려지면 화면을 잠급니다.");
+        } else if (!proximityAvailable && proximityReliability != ProximityReliability.UNAVAILABLE) {
+            ProximityReliabilityManager.set(this, ProximityReliability.UNAVAILABLE);
+            proximityReliability = ProximityReliability.UNAVAILABLE;
+        }
+
+        if (enabled) {
+            if (proximityReliability == ProximityReliability.UNAVAILABLE || proximityReliability == ProximityReliability.UNRELIABLE) {
+                statusText.setText("감시중 · 조도·가속도·자세 센서로 주머니 상태를 확인합니다.");
+            } else if (proximityAvailable) {
+                statusText.setText(sensitive
+                        ? "감시중 · 근접 센서가 가려지면 화면을 잠급니다."
+                        : "감시중 · 근접 센서로 주머니 상태를 확인합니다.");
+            } else {
+                statusText.setText("감시중 · 조도·가속도·자세 센서로 주머니 상태를 확인합니다.");
+            }
         } else {
             statusText.setText("준비됨 · 주머니 잠금 켜기를 활성화해 주세요.");
         }
         pocketSwitch.setChecked(adminActive && enabled);
+        updateDetectionModeSummary();
     }
 
     private void requestNotificationPermission() {
@@ -184,6 +284,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (detectionTestRunning) {
+            registerDetectionSensor();
+        }
         updateUi();
         boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
         boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
@@ -195,6 +298,45 @@ public class MainActivity extends Activity {
                 startService(serviceIntent);
             }
         }
+    }
+
+    @Override
+    protected void onPause() {
+        unregisterDetectionSensor();
+        super.onPause();
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (!detectionTestRunning || event == null || event.sensor == null
+                || event.sensor.getType() != Sensor.TYPE_PROXIMITY
+                || event.values == null || event.values.length == 0) {
+            return;
+        }
+
+        Sensor proximitySensor = event.sensor;
+        float threshold = Math.max(1.0f, proximitySensor.getMaximumRange() * 0.5f);
+        boolean isNear = event.values[0] < threshold;
+        long now = System.currentTimeMillis();
+        if (lastProximityTransitionAt == 0L) {
+            lastProximityNear = isNear;
+            lastProximityTransitionAt = now;
+            return;
+        }
+        if (isNear != lastProximityNear
+                && now - lastProximityTransitionAt >= PROXIMITY_DEBOUNCE_MS) {
+            if (isNear) {
+                nearDetectedCount++;
+            } else {
+                farDetectedCount++;
+            }
+            lastProximityNear = isNear;
+            lastProximityTransitionAt = now;
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
 
 }

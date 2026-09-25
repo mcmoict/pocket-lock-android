@@ -44,7 +44,7 @@
         <TableLayout android:id="@+id/accelerometerValues" style="@style/DiagnosticTable" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/lightText" style="@style/DiagnosticSection" android:layout_marginTop="20dp" android:text="조도 센서" />
         <TableLayout android:id="@+id/lightValues" style="@style/DiagnosticTable" android:layout_marginTop="8dp" />
-        <TextView
+                <TextView
             style="@style/DiagnosticSection"
             android:layout_marginTop="20dp"
             android:text="센서 테스트" />

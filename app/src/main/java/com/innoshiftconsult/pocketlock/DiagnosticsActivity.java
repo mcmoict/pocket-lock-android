@@ -34,6 +34,7 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
     private static final int MAX_EVENT_LOG_SIZE = 200;
     private static final long ACCELEROMETER_LOG_INTERVAL_MILLIS = 400L;
     private static final long TEST_TIMER_INTERVAL_MILLIS = 1000L;
+    private static final long PROXIMITY_DEBOUNCE_MS = 400L;
     private SensorManager sensorManager;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
@@ -53,6 +54,11 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
     private Button sensorTestButton;
     private boolean listenersRegistered;
     private boolean sensorTestRunning;
+    private boolean lastProximityNear;
+    private int proximityTransitions;
+    private int nearDetectedCount;
+    private int farDetectedCount;
+    private long lastProximityTransitionAt;
     private long sensorTestStartedAt;
     private long lastAccelerometerLogAt;
     private final Deque<String> eventLog = new ArrayDeque<>();
@@ -197,6 +203,22 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
                     proximityMaximumObserved = Math.max(proximityMaximumObserved, proximityValue);
                 }
                 proximityLastEvent = eventTime;
+                boolean isNear = proximityValue < (proximitySensor == null ? 1.0f : Math.max(1.0f, proximitySensor.getMaximumRange() * 0.5f));
+                long nowMs = System.currentTimeMillis();
+                if (proximityEventCount == 1) {
+                    lastProximityNear = isNear;
+                    lastProximityTransitionAt = nowMs;
+                } else if (isNear != lastProximityNear
+                        && nowMs - lastProximityTransitionAt >= PROXIMITY_DEBOUNCE_MS) {
+                    proximityTransitions++;
+                    if (isNear) {
+                        nearDetectedCount++;
+                    } else {
+                        farDetectedCount++;
+                    }
+                    lastProximityNear = isNear;
+                    lastProximityTransitionAt = nowMs;
+                }
                 addEventLog(eventTime + "  PROXIMITY   " + format(proximityValue));
                 break;
             case Sensor.TYPE_ACCELEROMETER:
@@ -340,19 +362,41 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
     }
 
     private void toggleSensorTest() {
+        if (proximitySensor == null) {
+            ProximityReliabilityManager.set(this, ProximityReliability.UNAVAILABLE);
+            sensorTestStatus.setText("근접 센서 상태: 사용 불가\n센서가 없어 Sensor Fusion으로 동작합니다.");
+            return;
+        }
         if (sensorTestRunning) {
             sensorTestRunning = false;
             addEventLog(formatEventTime() + "  === TEST END ===");
+            finalizeManualProximityTest();
             handler.removeCallbacks(testTimer);
         } else {
             sensorTestRunning = true;
             sensorTestStartedAt = System.currentTimeMillis();
             lastAccelerometerLogAt = 0L;
+            lastProximityNear = false;
+            proximityTransitions = 0;
+            nearDetectedCount = 0;
+            farDetectedCount = 0;
             addEventLog(formatEventTime() + "  === TEST START ===");
+            sensorTestStatus.setText("근접 센서 테스트\n통화할 때처럼 화면을 얼굴 쪽으로 가져갔다가 다시 떼어주세요.\n2~3회 반복해 주세요.");
             handler.post(testTimer);
         }
         updateTestControls();
         updateEventLogView();
+    }
+
+    private void finalizeManualProximityTest() {
+        boolean validPattern = nearDetectedCount >= 2 && farDetectedCount >= 2;
+        ProximityReliability reliability = validPattern ? ProximityReliability.RELIABLE : ProximityReliability.UNRELIABLE;
+        ProximityReliabilityManager.set(this, reliability);
+
+        sensorTestStatus.setText(validPattern
+                ? "근접 센서 상태: 정상\nFAR → NEAR → FAR 패턴을 확인했습니다.\n2회 이상 정상 변화가 검출되었습니다."
+                : "근접 센서 상태: 불안정\n근접 센서의 정상적인 상태 변화를 확인하지 못했습니다.\nNEAR 감지: " + nearDetectedCount + "회\nFAR 전환: " + farDetectedCount + "회");
+        updateReliabilitySummary();
     }
 
     private void resetMeasurements() {
@@ -404,10 +448,46 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
     }
 
     private void updateTestControls() {
-        sensorTestStatus.setText("센서 테스트: " + (sensorTestRunning ? "RUNNING" : "STOPPED"));
-        long elapsed = sensorTestRunning ? System.currentTimeMillis() - sensorTestStartedAt : 0L;
-        sensorTestElapsed.setText("경과 시간: " + formatDuration(elapsed));
-        sensorTestButton.setText(sensorTestRunning ? "센서 테스트 종료" : "센서 테스트 시작");
+        if (sensorTestRunning) {
+            sensorTestStatus.setText("근접 센서 테스트\n통화할 때처럼 휴대폰 화면을 얼굴 쪽으로 가져갔다가 다시 떼어주세요.\n화면을 가까이 가져갔을 때 NEAR, 다시 떼었을 때 FAR 상태가 감지되는지 확인합니다.\n2~3회 반복해 주세요.");
+            sensorTestElapsed.setText("경과 시간: " + formatDuration(System.currentTimeMillis() - sensorTestStartedAt));
+            sensorTestButton.setText("근접 센서 테스트 종료");
+            updateReliabilitySummary();
+            return;
+        }
+
+        ProximityReliability reliability = ProximityReliabilityManager.get(this);
+        String currentStatus;
+        String buttonText = "근접 센서 테스트";
+        if (reliability == ProximityReliability.RELIABLE) {
+            currentStatus = "근접 센서 상태: 정상\n현재 값: " + formatNearestState() + "\nFAR → NEAR → FAR 변화를 정상적으로 확인했습니다.";
+            buttonText = "근접 센서 다시 테스트";
+        } else if (reliability == ProximityReliability.UNRELIABLE) {
+            currentStatus = "근접 센서 상태: 불안정\n현재 값: " + formatNearestState() + "\n근접 센서의 정상적인 상태 변화를 확인하지 못했습니다.";
+            buttonText = "근접 센서 다시 테스트";
+        } else if (reliability == ProximityReliability.UNAVAILABLE) {
+            currentStatus = "근접 센서 상태: 사용 불가\n현재 감지 방식: Sensor Fusion\n센서 자체가 없어 테스트를 건너뛰었습니다.";
+            buttonText = "근접 센서 다시 테스트";
+        } else {
+            currentStatus = "근접 센서 상태: 확인 필요\n통화할 때처럼 화면을 얼굴 쪽으로 가져갔다가 다시 떼어주세요.\nFAR → NEAR → FAR 변화를 확인해 주세요.";
+            buttonText = "근접 센서 테스트";
+        }
+        sensorTestStatus.setText(currentStatus);
+        sensorTestElapsed.setText("경과 시간: 00:00");
+        sensorTestButton.setText(buttonText);
+        updateReliabilitySummary();
+    }
+
+    private void updateReliabilitySummary() {
+        // Legacy diagnostics screen intentionally omits the separate detection summary card.
+    }
+
+    private String formatNearestState() {
+        if (proximitySensor == null) {
+            return "미사용";
+        }
+        float threshold = Math.max(1.0f, proximitySensor.getMaximumRange() * 0.5f);
+        return proximityValue < threshold ? "NEAR" : "FAR";
     }
 
     private String formatDuration(long durationMillis) {

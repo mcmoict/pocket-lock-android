@@ -64,48 +64,10 @@
             android:drawableEnd="@drawable/ic_arrow_forward"
             android:drawableTint="@color/icon_background"
             android:drawablePadding="14dp"
-            android:minHeight="64dp"
+            android:minHeight="56dp"
             android:paddingStart="28dp"
             android:paddingEnd="18dp"
             android:text="기기 관리자 권한 허용"
-            android:textAllCaps="false"
-            android:textColor="@color/ink"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/uninstallButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/lavender_button"
-            android:drawableStart="@android:drawable/ic_menu_delete"
-            android:drawableEnd="@drawable/ic_arrow_forward"
-            android:drawableTint="@color/icon_background"
-            android:drawablePadding="14dp"
-            android:minHeight="64dp"
-            android:paddingStart="28dp"
-            android:paddingEnd="18dp"
-            android:text="앱 삭제 준비"
-            android:textAllCaps="false"
-            android:textColor="@color/ink"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/diagnosticsButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/lavender_button"
-            android:drawableStart="@android:drawable/ic_menu_info_details"
-            android:drawableEnd="@drawable/ic_arrow_forward"
-            android:drawableTint="@color/icon_background"
-            android:drawablePadding="14dp"
-            android:minHeight="64dp"
-            android:paddingStart="28dp"
-            android:paddingEnd="18dp"
-            android:text="기기 진단"
             android:textAllCaps="false"
             android:textColor="@color/ink"
             android:textSize="18sp"
@@ -146,6 +108,7 @@
                     android:layout_height="wrap_content"
                     android:text="보통"
                     android:textColor="@color/white"
+                    android:textSize="14sp"
                     android:buttonTint="@color/accent" />
 
                 <RadioButton
@@ -154,8 +117,112 @@
                     android:layout_height="wrap_content"
                     android:text="민감"
                     android:textColor="@color/white"
+                    android:textSize="14sp"
                     android:buttonTint="@color/accent" />
             </RadioGroup>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/dark_panel"
+            android:orientation="vertical"
+            android:paddingStart="20dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="16dp">
+
+            <TextView
+                android:id="@+id/detectionModeLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="주머니 감지 방식"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/detectionModeValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="근접 센서 방식"
+                android:textColor="@color/accent"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/detectionModeButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/lavender_button"
+                android:minHeight="52dp"
+                android:text="판단하기"
+                android:textAllCaps="false"
+                android:textColor="@color/ink"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/detectionModeGuide"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="근접 센서 테스트\n통화할 때처럼 휴대폰 화면을 얼굴 쪽으로 가져갔다가 다시 떼어주세요.\n2~3회 반복해 주세요."
+                android:textColor="@color/muted"
+                android:textSize="15sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/uninstallButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/lavender_button"
+                android:drawableStart="@drawable/ic_delete_small"
+                android:drawableEnd="@drawable/ic_arrow_forward_small"
+                android:drawableTint="@color/icon_background"
+                android:drawablePadding="6dp"
+                android:minHeight="56dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="앱 삭제 준비"
+                android:textAllCaps="false"
+                android:singleLine="true"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/diagnosticsButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/lavender_button"
+                android:drawableStart="@drawable/ic_info_small"
+                android:drawableEnd="@drawable/ic_arrow_forward_small"
+                android:drawableTint="@color/icon_background"
+                android:drawablePadding="6dp"
+                android:minHeight="56dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="기기 진단"
+                android:textAllCaps="false"
+                android:singleLine="true"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <TextView
