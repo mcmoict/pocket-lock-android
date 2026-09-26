@@ -69,7 +69,7 @@ public class PocketLockService extends Service implements SensorEventListener {
         proximitySensor = sensorManager == null ? null : sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
         accelerometer = sensorManager == null ? null : sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         lightSensor = sensorManager == null ? null : sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
-        pocketSensorFusionDetector = new PocketSensorFusionDetector();
+        pocketSensorFusionDetector = new PocketSensorFusionDetector(lightSensor != null);
         isUpsideDown = accelerometer == null;
         devicePolicyManager = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
         adminComponent = new ComponentName(this, PocketLockAdminReceiver.class);

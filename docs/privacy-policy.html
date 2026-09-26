@@ -93,24 +93,13 @@
     }
 
     .app-icon {
-      display: grid;
-      place-items: center;
+      display: block;
       width: 58px;
       height: 58px;
       flex: 0 0 auto;
       border-radius: 16px;
-      background: linear-gradient(145deg, #6366f1, #4338ca);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 10px 28px rgba(0,0,0,.24);
-    }
-
-    .app-icon svg {
-      width: 31px;
-      height: 31px;
-      fill: none;
-      stroke: white;
-      stroke-width: 2.2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+      object-fit: contain;
+      box-shadow: 0 10px 28px rgba(0,0,0,.24);
     }
 
     .brand-text strong {
@@ -433,13 +422,7 @@
   <main class="page">
     <header class="hero">
       <div class="brand">
-        <div class="app-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <rect x="5" y="10" width="14" height="10" rx="2.5"></rect>
-            <path d="M8 10V7.5a4 4 0 0 1 8 0V10"></path>
-            <path d="M12 14v2.5"></path>
-          </svg>
-        </div>
+        <img class="app-icon" src="pocket_lock_icon.png" alt="Pocket Lock 앱 아이콘" />
         <div class="brand-text">
           <strong>Pocket Lock</strong>
           <span>InnoShift Consulting</span>
@@ -454,7 +437,7 @@
 
       <div class="meta">
         <span class="chip"><span class="chip-dot"></span> 개인정보 수집 없음</span>
-        <span class="chip">시행일 2026. 09. 13.</span>
+        <span class="chip">시행일 2026. 09. 26.</span>
       </div>
     </header>
 
@@ -476,7 +459,7 @@
     <article class="content">
       <div class="intro">
         <strong>이노시프트컨설팅</strong>은 Pocket Lock(이하 “앱”) 이용자의 개인정보를 중요하게 생각합니다.
-        Pocket Lock은 화면 오작동을 방지하기 위해 기기의 근접 센서 및 움직임 센서 정보를 이용하는 Android 애플리케이션입니다.
+        Pocket Lock은 화면 오작동을 방지하기 위해 기기의 근접 센서 또는 복합 센서 정보를 이용하는 Android 애플리케이션입니다.
       </div>
 
       <section>
@@ -494,14 +477,14 @@
         <p>Pocket Lock은 다음과 같은 기기 센서 정보를 사용할 수 있습니다.</p>
         <ul>
           <li>근접 센서 정보</li>
-          <li>기기의 방향 및 움직임을 판단하기 위한 센서 정보</li>
+          <li>복합 센서 방식에서 사용하는 가속도계 및 사용 가능한 경우 조도 센서 정보</li>
         </ul>
         <p>
           이러한 정보는 사용자의 휴대폰이 주머니 등에 들어간 상태인지 판단하여
           화면을 잠그는 기능을 제공하기 위해 사용됩니다.
         </p>
         <div class="notice">
-          센서 정보는 기기 내부에서 실시간으로 처리되며 저장되거나 외부 서버로 전송되지 않습니다.
+          센서 정보는 잠금 판단을 위해 기기 내부에서 실시간 처리되며 앱에 저장되거나 외부 서버로 전송되지 않습니다. 사용자가 진단 결과 복사를 선택하면 기기·센서 진단 정보가 시스템 클립보드에 복사됩니다.
         </div>
       </section>
 

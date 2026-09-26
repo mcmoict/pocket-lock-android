@@ -43,6 +43,36 @@ public class ProximityReliabilityManagerTest {
         detector.onAccelerometer(0.2f, -9.4f, 0.3f, 850L);
         detector.onAccelerometer(0.4f, -9.2f, 0.2f, 1000L);
 
+        assertFalse(detector.shouldLock());
+
+        detector.onAccelerometer(0.3f, -9.3f, 0.2f, 1600L);
         assertTrue(detector.shouldLock());
+
+        detector.onAccelerometer(0.2f, -9.3f, 0.3f, 1900L);
+        assertTrue(detector.shouldLock());
+
+        detector.onLight(100f, 2000L);
+        assertFalse(detector.shouldLock());
+    }
+
+    @Test
+    public void fusionDetectorUsesInvertedStableOrientationWithoutLightSensor() {
+        PocketSensorFusionDetector detector = new PocketSensorFusionDetector(false);
+        detector.onAccelerometer(-1f, 4f, 9f, 0L);
+        detector.onAccelerometer(-1f, 4f, 9f, 400L);
+        detector.onAccelerometer(9f, -4f, 9f, 800L);
+        detector.onAccelerometer(8f, -8f, 1f, 1200L);
+        detector.onAccelerometer(4f, -9f, 1f, 1600L);
+
+        assertFalse(detector.shouldLock());
+
+        detector.onAccelerometer(3f, -9f, 1f, 2200L);
+        assertTrue(detector.shouldLock());
+
+        detector.onAccelerometer(3f, -9f, 1f, 2800L);
+        assertTrue(detector.shouldLock());
+
+        detector.onAccelerometer(0f, 4f, 9f, 3200L);
+        assertFalse(detector.shouldLock());
     }
 }

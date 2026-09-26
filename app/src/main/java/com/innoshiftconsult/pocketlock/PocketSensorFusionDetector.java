@@ -11,21 +11,36 @@ public class PocketSensorFusionDetector {
     private static final long MOTION_WINDOW_MS = 5000L;
     private static final long EVENT_CORRELATION_WINDOW_MS = 5000L;
     private static final long POCKET_CONFIRMATION_MS = 600L;
-    private static final long LOCK_COOLDOWN_MS = 3000L;
 
     private static final float DARK_LUX_THRESHOLD = 30.0f;
     private static final float MIN_BASELINE_LUX = 20.0f;
     private static final float LIGHT_DROP_RATIO = 0.50f;
     private static final float MOTION_THRESHOLD = 0.25f;
+    private static final float ACCELERATION_CHANGE_THRESHOLD = 1.5f;
     private static final float ORIENTATION_VERTICAL_THRESHOLD = 3.0f;
+    private static final float NO_LIGHT_POCKET_Y_THRESHOLD = 7.0f;
 
+    private final boolean lightSensorAvailable;
     private final Deque<LuxSample> recentLuxSamples = new ArrayDeque<>();
     private final Deque<MotionSample> recentMotionSamples = new ArrayDeque<>();
     private long lastDetectedPocketAt = -1L;
-    private long lastLockAt = -1L;
     private float currentX;
     private float currentY;
     private float currentZ;
+    private float previousX;
+    private float previousY;
+    private float previousZ;
+    private boolean hasPreviousAcceleration;
+    private boolean hasObservedUprightOrientation;
+    private boolean noLightPocketLatched;
+
+    public PocketSensorFusionDetector() {
+        this(true);
+    }
+
+    public PocketSensorFusionDetector(boolean lightSensorAvailable) {
+        this.lightSensorAvailable = lightSensorAvailable;
+    }
 
     public synchronized void onLight(float lux, long timestampMs) {
         recentLuxSamples.addLast(new LuxSample(lux, timestampMs));
@@ -36,25 +51,35 @@ public class PocketSensorFusionDetector {
         currentX = x;
         currentY = y;
         currentZ = z;
+        if (currentY >= ORIENTATION_VERTICAL_THRESHOLD) {
+            hasObservedUprightOrientation = true;
+            noLightPocketLatched = false;
+        }
         float magnitude = (float) Math.sqrt(x * x + y * y + z * z);
         float motionDelta = Math.abs(magnitude - SensorManager.GRAVITY_EARTH);
-        recentMotionSamples.addLast(new MotionSample(motionDelta, timestampMs));
+        float accelerationChange = hasPreviousAcceleration
+            ? (float) Math.sqrt(
+                square(x - previousX) + square(y - previousY) + square(z - previousZ))
+            : 0f;
+        recentMotionSamples.addLast(new MotionSample(motionDelta, accelerationChange, timestampMs));
+        previousX = x;
+        previousY = y;
+        previousZ = z;
+        hasPreviousAcceleration = true;
         pruneMotionSamples(timestampMs);
     }
 
     public synchronized boolean shouldLock() {
         long nowMs = getLatestTimestamp();
-        if (lastLockAt >= 0L && nowMs - lastLockAt < LOCK_COOLDOWN_MS) {
-            return false;
-        }
         if (hasPocketCandidate(nowMs)) {
             if (lastDetectedPocketAt < 0L) {
                 lastDetectedPocketAt = nowMs;
                 return false;
             }
             if (nowMs - lastDetectedPocketAt >= POCKET_CONFIRMATION_MS) {
-                lastLockAt = nowMs;
-                lastDetectedPocketAt = -1L;
+                if (!lightSensorAvailable) {
+                    noLightPocketLatched = true;
+                }
                 return true;
             }
             return false;
@@ -64,7 +89,16 @@ public class PocketSensorFusionDetector {
     }
 
     private boolean hasPocketCandidate(long nowMs) {
-        if (recentLuxSamples.isEmpty() || recentMotionSamples.isEmpty()) {
+        if (recentMotionSamples.isEmpty()) {
+            return false;
+        }
+        if (!lightSensorAvailable) {
+            return noLightPocketLatched || (hasObservedUprightOrientation
+                && currentY <= -NO_LIGHT_POCKET_Y_THRESHOLD
+                && hasRecentAccelerationChange(nowMs)
+                && isPocketLikeOrientation());
+        }
+        if (recentLuxSamples.isEmpty()) {
             return false;
         }
         LuxSample latestLux = recentLuxSamples.peekLast();
@@ -104,6 +138,20 @@ public class PocketSensorFusionDetector {
             }
         }
         return false;
+    }
+
+    private boolean hasRecentAccelerationChange(long nowMs) {
+        for (MotionSample motion : recentMotionSamples) {
+            if (nowMs - motion.timestampMs <= MOTION_WINDOW_MS
+                    && motion.accelerationChange > ACCELERATION_CHANGE_THRESHOLD) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static float square(float value) {
+        return value * value;
     }
 
     private boolean isPocketLikeOrientation() {
@@ -146,10 +194,12 @@ public class PocketSensorFusionDetector {
 
     private static class MotionSample {
         final float delta;
+        final float accelerationChange;
         final long timestampMs;
 
-        MotionSample(float delta, long timestampMs) {
+        MotionSample(float delta, float accelerationChange, long timestampMs) {
             this.delta = delta;
+            this.accelerationChange = accelerationChange;
             this.timestampMs = timestampMs;
         }
     }
