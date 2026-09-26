@@ -37,21 +37,23 @@
                 android:textSize="15sp" />
         </LinearLayout>
 
-        <TextView
+        <com.innoshiftconsult.pocketlock.GuideMarqueeTextView
             android:id="@+id/usageGuideText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="28dp"
             android:layout_marginTop="12dp"
             android:background="@android:color/transparent"
             android:clickable="true"
             android:drawableStart="@drawable/ic_info_small"
             android:drawableTint="@color/muted"
             android:drawablePadding="6dp"
-            android:ellipsize="end"
+            android:ellipsize="none"
             android:focusable="true"
+            android:focusableInTouchMode="true"
             android:gravity="center_vertical"
             android:includeFontPadding="false"
-            android:maxLines="2"
+            android:scrollHorizontally="true"
+            android:singleLine="true"
             android:paddingTop="2dp"
             android:paddingBottom="2dp"
             android:text="사용 안내"

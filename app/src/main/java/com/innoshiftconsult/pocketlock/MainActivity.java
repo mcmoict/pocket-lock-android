@@ -29,7 +29,9 @@ import android.view.View;
 public class MainActivity extends Activity implements SensorEventListener {
     private static final int ADMIN_REQUEST = 100;
     private static final long PROXIMITY_DEBOUNCE_MS = 400L;
-    private static final long USAGE_GUIDE_INTERVAL_MILLIS = 7000L;
+    private static final long USAGE_GUIDE_PAUSE_MILLIS = 1500L;
+    private static final long USAGE_GUIDE_SCROLL_HOLD_MILLIS = 5500L;
+    private static final long USAGE_GUIDE_FADE_MILLIS = 450L;
     private static final String PRIVACY_POLICY_URL =
             "https://mcmoict.github.io/pocket-lock-android/privacy-policy.html";
     private static final String PREFS = "pocket_lock";
@@ -42,7 +44,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     private TextView statusText;
     private TextView detectionModeValue;
     private TextView detectionModeGuide;
-    private TextView usageGuideText;
+    private GuideMarqueeTextView usageGuideText;
     private Button detectionModeButton;
     private boolean detectionTestRunning;
     private boolean detectionListenersRegistered;
@@ -52,15 +54,9 @@ public class MainActivity extends Activity implements SensorEventListener {
     private long lastProximityTransitionAt;
     private int usageGuideMessageIndex;
     private final Handler usageGuideHandler = new Handler(Looper.getMainLooper());
-    private final Runnable usageGuideRotation = new Runnable() {
-        @Override
-        public void run() {
-            if (!isFinishing()) {
-                showNextUsageGuideMessage();
-                usageGuideHandler.postDelayed(this, USAGE_GUIDE_INTERVAL_MILLIS);
-            }
-        }
-    };
+    private final Runnable usageGuideMarqueeStarter = this::startUsageGuideMarquee;
+    private final Runnable usageGuideMarqueeCompletion = this::finishUsageGuideMessage;
+    private final Runnable usageGuideFadeOut = this::fadeOutUsageGuide;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,8 +74,11 @@ public class MainActivity extends Activity implements SensorEventListener {
         detectionModeValue = findViewById(R.id.detectionModeValue);
         detectionModeGuide = findViewById(R.id.detectionModeGuide);
         usageGuideText = findViewById(R.id.usageGuideText);
+        usageGuideText.setSelected(false);
+        tintCompoundDrawables(usageGuideText, R.color.muted);
         detectionModeButton = findViewById(R.id.detectionModeButton);
         Button adminButton = findViewById(R.id.adminButton);
+        tintCompoundDrawables(adminButton, R.color.icon_background);
         Button uninstallButton = findViewById(R.id.uninstallButton);
         Button diagnosticsButton = findViewById(R.id.diagnosticsButton);
         RadioGroup sensitivityGroup = findViewById(R.id.sensitivityGroup);
@@ -135,6 +134,16 @@ public class MainActivity extends Activity implements SensorEventListener {
         });
         updateUi();
         requestNotificationPermission();
+    }
+
+    // android:drawableTint is ignored below API 23, so tint compound drawables in code instead.
+    private void tintCompoundDrawables(TextView view, int colorResId) {
+        int color = getResources().getColor(colorResId);
+        for (android.graphics.drawable.Drawable drawable : view.getCompoundDrawablesRelative()) {
+            if (drawable != null) {
+                drawable.mutate().setTint(color);
+            }
+        }
     }
 
     private void requestAdminAccess() {
@@ -214,19 +223,16 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     private void startUsageGuideRotation() {
-        usageGuideHandler.removeCallbacks(usageGuideRotation);
-        if (ProximityReliabilityManager.get(this) == ProximityReliability.UNKNOWN) {
-            usageGuideMessageIndex = 1;
-        } else {
-            usageGuideMessageIndex = 0;
-        }
+        usageGuideHandler.removeCallbacks(usageGuideMarqueeStarter);
+        usageGuideHandler.removeCallbacks(usageGuideMarqueeCompletion);
+        usageGuideHandler.removeCallbacks(usageGuideFadeOut);
+        usageGuideMessageIndex = ProximityReliabilityManager.get(this) == ProximityReliability.UNKNOWN ? 2 : 0;
         showUsageGuideMessage(usageGuideMessageIndex);
-        usageGuideHandler.postDelayed(usageGuideRotation, USAGE_GUIDE_INTERVAL_MILLIS);
     }
 
     private void showNextUsageGuideMessage() {
         if (ProximityReliabilityManager.get(this) == ProximityReliability.UNKNOWN) {
-            usageGuideMessageIndex = 1;
+            usageGuideMessageIndex = 2;
         } else {
             usageGuideMessageIndex = (usageGuideMessageIndex + 1) % 3;
         }
@@ -236,30 +242,62 @@ public class MainActivity extends Activity implements SensorEventListener {
     private void showUsageGuideMessage(int messageIndex) {
         String message;
         if (messageIndex == 0) {
-            message = "앱 삭제 전 [앱 삭제 준비]에서 기기 관리자 권한을 해제해 주세요.";
+            message = "앱을 삭제 하려면 [앱 삭제 준비]에서 기기 관리자 권한을 해제해 주세요.";
         } else if (messageIndex == 1) {
-            message = "앱 사용 전 [판단하기]로 주머니 감지 방식을 먼저 확인해 주세요.";
-        } else {
             message = "잠금이 안 되면 [기기 진단]에서 근접 센서를 테스트해 주세요.";
+        } else {
+            message = "앱을 사용하기 전에 [판단하기]로 주머니 감지 방식을 먼저 확인해 주세요.";
         }
 
+        usageGuideHandler.removeCallbacks(usageGuideMarqueeStarter);
+        usageGuideHandler.removeCallbacks(usageGuideMarqueeCompletion);
+        usageGuideHandler.removeCallbacks(usageGuideFadeOut);
+        usageGuideText.animate().cancel();
+        usageGuideText.stopWatchingEndMarker();
+        usageGuideText.setSelected(false);
+        usageGuideText.setScrollX(0);
         usageGuideText.animate()
                 .alpha(0f)
-                .setDuration(180L)
+                .setDuration(USAGE_GUIDE_FADE_MILLIS)
                 .withEndAction(() -> {
-                    usageGuideText.setText(message);
-                    //usageGuideText.setText("💡 " + message);
-                    usageGuideText.animate().alpha(1f).setDuration(180L).start();
+                    usageGuideText.setGuideText(message);
+                    usageGuideText.setScrollX(0);
+                    usageGuideText.animate()
+                            .alpha(1f)
+                            .setDuration(USAGE_GUIDE_FADE_MILLIS)
+                            .withEndAction(() -> usageGuideHandler.postDelayed(
+                                    usageGuideMarqueeStarter, USAGE_GUIDE_PAUSE_MILLIS))
+                            .start();
                 })
+                .start();
+    }
+
+    private void startUsageGuideMarquee() {
+        usageGuideText.startWatchingEndMarker(usageGuideMarqueeCompletion);
+        usageGuideText.setSelected(true);
+    }
+
+    private void finishUsageGuideMessage() {
+        usageGuideText.stopWatchingEndMarker();
+        usageGuideText.setSelected(false);
+        usageGuideHandler.removeCallbacks(usageGuideFadeOut);
+        usageGuideHandler.postDelayed(usageGuideFadeOut, USAGE_GUIDE_SCROLL_HOLD_MILLIS);
+    }
+
+    private void fadeOutUsageGuide() {
+        usageGuideText.animate()
+                .alpha(0f)
+                .setDuration(USAGE_GUIDE_FADE_MILLIS)
+                .withEndAction(this::showNextUsageGuideMessage)
                 .start();
     }
 
     private void showUsageGuideDialog() {
         new android.app.AlertDialog.Builder(this)
                 .setTitle("사용 안내")
-                .setMessage("① 처음 사용하신다면 [판단하기]로 주머니 감지 방식을 먼저 확인해 주세요.\n\n"
-                        + "② 자동 잠금이 정상적으로 작동하지 않으면 [기기 진단]에서 근접 센서를 테스트하고 진단 결과를 개발자에게 보내주세요.\n\n"
-                        + "③ 앱을 삭제하려면 먼저 [앱 삭제 준비]를 눌러 기기 관리자 권한을 해제해 주세요.")
+                .setMessage("처음 사용하신다면 [판단하기]로 주머니 감지 방식을 먼저 확인해 주세요.\n\n"
+                        + "자동 잠금이 정상적으로 작동하지 않으면 [기기 진단]에서 근접 센서를 테스트하고 진단 결과를 개발자에게 보내주세요.\n\n"
+                        + "앱을 삭제 하려면 먼저 [앱 삭제 준비]를 눌러 기기 관리자 권한을 해제해 주세요.")
                 .setPositiveButton("확인", null)
                 .show();
     }
@@ -372,7 +410,11 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     @Override
     protected void onPause() {
-        usageGuideHandler.removeCallbacks(usageGuideRotation);
+        usageGuideHandler.removeCallbacks(usageGuideMarqueeStarter);
+        usageGuideHandler.removeCallbacks(usageGuideMarqueeCompletion);
+        usageGuideHandler.removeCallbacks(usageGuideFadeOut);
+        usageGuideText.animate().cancel();
+        usageGuideText.setSelected(false);
         unregisterDetectionSensor();
         super.onPause();
     }
