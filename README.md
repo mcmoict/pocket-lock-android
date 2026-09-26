@@ -150,6 +150,7 @@ keyPassword=KEY_PASSWORD
 
 ## 저장소 및 프로젝트 정보
 
+- 개발·기기 운영·릴리스 절차: [개발·운영 및 개선 가이드](docs/MAINTENANCE.md)
 - Android 패키지 이름: `com.innoshiftconsult.pocketlock`
 - 앱 버전: `1.0.5` (`versionCode` 26)
 - 최소 Android 버전: API 22
