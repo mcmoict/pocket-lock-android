@@ -44,7 +44,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="proximity sensor pocket screen locking" />
+                android:value="Continuously monitors device sensors while Pocket Lock is enabled to detect when the phone is placed in a pocket and immediately lock the screen." />
         </service>
     </application>
 </manifest>

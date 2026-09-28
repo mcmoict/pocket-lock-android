@@ -245,7 +245,7 @@ public class PocketLockService extends Service implements SensorEventListener {
         return builder
                 .setSmallIcon(android.R.drawable.ic_lock_lock)
                 .setContentTitle("Pocket Lock 활성화됨")
-                .setContentText("근접 센서를 감시하고 있습니다")
+                .setContentText("주머니 상태를 감지하고 있습니다")
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
                 .build();

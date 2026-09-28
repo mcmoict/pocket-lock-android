@@ -152,7 +152,7 @@ keyPassword=KEY_PASSWORD
 
 - 개발·기기 운영·릴리스 절차: [개발·운영 및 개선 가이드](docs/MAINTENANCE.md)
 - Android 패키지 이름: `com.innoshiftconsult.pocketlock`
-- 앱 버전: `1.0.5` (`versionCode` 26)
+- 앱 버전: `1.0.6` (`versionCode` 27)
 - 최소 Android 버전: API 22
 - 컴파일 및 대상 SDK: API 36
 - Android Gradle Plugin: `9.3.2`
