@@ -9,6 +9,10 @@ import android.util.Log;
 public final class ScreenLockManager {
     public static final String PREFS = "pocket_lock";
     public static final String ACCESSIBILITY_CONSENT = "accessibility_lock_consent";
+    public static final String ACCESSIBILITY_DISCLOSURE_VERSION = "accessibility_disclosure_version";
+    public static final String ACCESSIBILITY_DISCLOSURE_TIMESTAMP = "accessibility_disclosure_timestamp";
+    // Raise this only when the disclosure content or data-handling purpose changes materially.
+    public static final int CURRENT_DISCLOSURE_VERSION = 1;
     private static final String TAG = "PocketLockScreenLock";
 
     private ScreenLockManager() {
@@ -26,8 +30,19 @@ public final class ScreenLockManager {
     }
 
     public static boolean hasAccessibilityConsent(Context context) {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getBoolean(ACCESSIBILITY_CONSENT, false);
+        android.content.SharedPreferences prefs =
+                context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        // Consent recorded before versioning existed is treated as version 1.
+        return prefs.getBoolean(ACCESSIBILITY_CONSENT, false)
+                && prefs.getInt(ACCESSIBILITY_DISCLOSURE_VERSION, 1) >= CURRENT_DISCLOSURE_VERSION;
+    }
+
+    public static void recordAccessibilityConsent(Context context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putBoolean(ACCESSIBILITY_CONSENT, true)
+                .putInt(ACCESSIBILITY_DISCLOSURE_VERSION, CURRENT_DISCLOSURE_VERSION)
+                .putLong(ACCESSIBILITY_DISCLOSURE_TIMESTAMP, System.currentTimeMillis())
+                .apply();
     }
 
     public static String getPermissionStatus(Context context) {

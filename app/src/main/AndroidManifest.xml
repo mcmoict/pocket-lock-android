@@ -28,10 +28,6 @@
             android:name=".DiagnosticsActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
-        <activity
-            android:name=".AccessibilityConsentActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
 
         <receiver
             android:name=".PocketLockAdminReceiver"

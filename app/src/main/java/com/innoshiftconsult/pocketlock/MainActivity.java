@@ -28,7 +28,7 @@ import android.view.View;
 
 public class MainActivity extends Activity implements SensorEventListener {
     private static final int ADMIN_REQUEST = 100;
-    private static final int ACCESSIBILITY_CONSENT_REQUEST = 101;
+    private android.app.AlertDialog accessibilityDisclosureDialog;
     private static final long PROXIMITY_DEBOUNCE_MS = 400L;
     private static final long USAGE_GUIDE_PAUSE_MILLIS = 1500L;
     private static final long USAGE_GUIDE_SCROLL_HOLD_MILLIS = 5500L;
@@ -237,12 +237,34 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     private void requestAccessibilityActivation() {
         if (!ScreenLockManager.hasAccessibilityConsent(this)) {
-            startActivityForResult(
-                    new Intent(this, AccessibilityConsentActivity.class),
-                    ACCESSIBILITY_CONSENT_REQUEST);
+            showAccessibilityDisclosureDialog();
             return;
         }
         openAccessibilitySettings();
+    }
+
+    private void showAccessibilityDisclosureDialog() {
+        if (accessibilityDisclosureDialog != null && accessibilityDisclosureDialog.isShowing()) {
+            return;
+        }
+        accessibilityDisclosureDialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("접근성 서비스 사용 안내")
+                .setMessage("Pocket Lock은 휴대폰이 주머니에 들어간 상태를 감지하면 화면을 자동으로 잠그기 위해 "
+                        + "Android 접근성 서비스를 사용합니다.\n\n"
+                        + "[접근성 서비스 사용 목적]\n"
+                        + "주머니 감지 후 화면 자동 잠금 기능을 실행하기 위한 용도로 사용합니다.\n\n"
+                        + "[정보 처리 안내]\n"
+                        + "Android 접근성 서비스에는 화면 내용 확인 및 제어 권한이 포함됩니다.\n\n"
+                        + "Pocket Lock은 접근성 서비스를 화면 자동 잠금 실행에만 사용하며, "
+                        + "화면 내용이나 개인정보를 수집하거나 외부로 전송하지 않습니다.\n\n"
+                        + "접근성 서비스를 활성화하지 않으면 Android 9 이상에서 자동 화면 잠금 기능을 "
+                        + "사용할 수 없습니다.\n\n"
+                        + "동의 후 Android 접근성 설정에서 Pocket Lock 서비스를 직접 켜야 하며, "
+                        + "동의만으로 서비스가 활성화되지는 않습니다.")
+                .setNegativeButton("동의하지 않음", null)
+                .setPositiveButton("동의하고 계속", (dialog, which) -> continueAfterAccessibilityConsent())
+                .create();
+        accessibilityDisclosureDialog.show();
     }
 
     private void openAccessibilitySettings() {
@@ -266,10 +288,10 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     private void continueAfterAccessibilityConsent() {
-        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
-                .putBoolean(ScreenLockManager.ACCESSIBILITY_CONSENT, true)
-                .apply();
-        openAccessibilitySettings();
+        ScreenLockManager.recordAccessibilityConsent(this);
+        if (!PocketLockAccessibilityService.isEnabled(this)) {
+            openAccessibilitySettings();
+        }
         updateUi();
     }
 
@@ -664,13 +686,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ACCESSIBILITY_CONSENT_REQUEST) {
-            if (resultCode == RESULT_OK) {
-                continueAfterAccessibilityConsent();
-            } else {
-                updateUi();
-            }
-        } else if (requestCode == ADMIN_REQUEST) {
+        if (requestCode == ADMIN_REQUEST) {
             updateUi();
         }
     }
@@ -690,6 +706,10 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     @Override
     protected void onDestroy() {
+        if (accessibilityDisclosureDialog != null) {
+            accessibilityDisclosureDialog.dismiss();
+            accessibilityDisclosureDialog = null;
+        }
         usageGuideHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
     }

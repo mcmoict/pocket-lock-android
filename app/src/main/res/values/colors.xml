@@ -2,6 +2,7 @@
     <color name="ink">#15145A</color>
     <color name="paper">#151A67</color>
     <color name="accent">#F2A6F3</color>
+    <color name="dialog_button">#5B3FC4</color>
     <color name="muted">#C6C4F0</color>
     <color name="icon_background">#5D47B5</color>
     <color name="background_top">#3549B5</color>
