@@ -47,6 +47,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     private TextView detectionModeGuide;
     private GuideMarqueeTextView usageGuideText;
     private Button detectionModeButton;
+    private Button adminButton;
     private boolean detectionTestRunning;
     private boolean detectionListenersRegistered;
     private boolean lastProximityNear;
@@ -76,9 +77,9 @@ public class MainActivity extends Activity implements SensorEventListener {
         detectionModeGuide = findViewById(R.id.detectionModeGuide);
         usageGuideText = findViewById(R.id.usageGuideText);
         usageGuideText.setSelected(false);
-        tintCompoundDrawables(usageGuideText, R.color.muted);
+        tintCompoundDrawables(usageGuideText, R.color.white);
         detectionModeButton = findViewById(R.id.detectionModeButton);
-        Button adminButton = findViewById(R.id.adminButton);
+        adminButton = findViewById(R.id.adminButton);
         tintCompoundDrawables(adminButton, R.color.icon_background);
         Button manualButton = findViewById(R.id.manualButton);
         Button uninstallButton = findViewById(R.id.uninstallButton);
@@ -175,6 +176,13 @@ public class MainActivity extends Activity implements SensorEventListener {
             intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
                     "주머니에서 화면이 눌리지 않도록 화면을 즉시 잠그는 권한입니다.");
             startActivityForResult(intent, ADMIN_REQUEST);
+        } else {
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("이미 허용되어 있어요")
+                    .setMessage("기기 관리자 권한이 이미 허용되어 있습니다.\n\n"
+                            + "권한을 해제하려면 [앱 삭제 준비] 버튼을 눌러 주세요.")
+                    .setPositiveButton("확인", null)
+                    .show();
         }
     }
 
@@ -373,6 +381,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     private void updateUi() {
         boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
+        // Stays clickable so tapping explains how to release the permission.
+        adminButton.setAlpha(adminActive ? 0.45f : 1f);
         boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
         boolean sensitive = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SENSITIVE, false);
         boolean proximityAvailable = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY) != null;
