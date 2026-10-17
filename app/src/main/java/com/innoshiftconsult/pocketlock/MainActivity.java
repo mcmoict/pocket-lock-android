@@ -28,6 +28,7 @@ import android.view.View;
 
 public class MainActivity extends Activity implements SensorEventListener {
     private static final int ADMIN_REQUEST = 100;
+    private static final int ACCESSIBILITY_CONSENT_REQUEST = 101;
     private static final long PROXIMITY_DEBOUNCE_MS = 400L;
     private static final long USAGE_GUIDE_PAUSE_MILLIS = 1500L;
     private static final long USAGE_GUIDE_SCROLL_HOLD_MILLIS = 5500L;
@@ -55,10 +56,28 @@ public class MainActivity extends Activity implements SensorEventListener {
     private int farDetectedCount;
     private long lastProximityTransitionAt;
     private int usageGuideMessageIndex;
+    private boolean waitingForAdminDeactivation;
+    private boolean activityResumed;
+    private int accessibilityStatusRefreshAttempts;
     private final Handler usageGuideHandler = new Handler(Looper.getMainLooper());
     private final Runnable usageGuideMarqueeStarter = this::startUsageGuideMarquee;
     private final Runnable usageGuideMarqueeCompletion = this::finishUsageGuideMessage;
     private final Runnable usageGuideFadeOut = this::fadeOutUsageGuide;
+    private final Runnable accessibilityStatusRefresh = new Runnable() {
+        @Override
+        public void run() {
+            if (!activityResumed || Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                return;
+            }
+            updateUi();
+            boolean serviceNeedsRefresh = ScreenLockManager.hasAccessibilityConsent(MainActivity.this)
+                    && PocketLockAccessibilityService.isEnabled(MainActivity.this)
+                    && !PocketLockAccessibilityService.isConnected();
+            if (serviceNeedsRefresh && accessibilityStatusRefreshAttempts++ < 8) {
+                usageGuideHandler.postDelayed(this, 500L);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,7 +141,13 @@ public class MainActivity extends Activity implements SensorEventListener {
             dialog.show();
         });
 
-        adminButton.setOnClickListener(view -> requestAdminAccess());
+        adminButton.setOnClickListener(view -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                requestAccessibilityActivation();
+            } else {
+                requestAdminAccess();
+            }
+        });
         manualButton.setOnClickListener(view -> startActivity(
                 new Intent(this, ManualActivity.class)));
         uninstallButton.setOnClickListener(view -> prepareForUninstall());
@@ -148,11 +173,16 @@ public class MainActivity extends Activity implements SensorEventListener {
             return;
         }
         prefs.edit().putBoolean(FIRST_RUN_GUIDE_SHOWN, true).apply();
+        String guide = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                ? "① 자동 화면 잠금 권한 안내를 확인하고 동의합니다.\n\n"
+                        + "② Android 접근성 설정에서 Pocket Lock 서비스를 직접 켭니다.\n\n"
+                        + "③ 앱으로 돌아와 [주머니 잠금 켜기]를 켭니다."
+                : "① [기기 관리자 권한 허용]을 누릅니다.\n\n"
+                        + "② [이 기기 관리자 앱 활성화]를 선택합니다.\n\n"
+                        + "③ [주머니 잠금 켜기]를 켭니다.";
         new android.app.AlertDialog.Builder(this)
                 .setTitle("처음 사용하시나요?")
-                .setMessage("① 권한 허용\n[기기 관리자 권한 허용]을 누르세요.\n\n"
-                        + "② 감지 방식 설정\n[내 휴대폰에 맞게 자동 설정]을 누르세요.\n\n"
-                        + "③ 잠금 켜기\n[주머니 잠금 켜기]를 켜세요.")
+                .setMessage(guide + "\n\n감지 방식은 [내 휴대폰에 맞게 자동 설정]에서 확인할 수 있어요.")
                 .setPositiveButton("확인", null)
                 .setNeutralButton("자세한 사용 방법", (dialog, which) -> startActivity(
                         new Intent(this, ManualActivity.class)))
@@ -171,25 +201,86 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     private void requestAdminAccess() {
         if (!devicePolicyManager.isAdminActive(adminComponent)) {
-            Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
-            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "주머니에서 화면이 눌리지 않도록 화면을 즉시 잠그는 권한입니다.");
-            startActivityForResult(intent, ADMIN_REQUEST);
+            showLegacyLockNotice(() -> {
+                Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+                intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
+                intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                        "주머니에서 화면이 눌리지 않도록 화면을 즉시 잠그는 권한입니다.");
+                startActivityForResult(intent, ADMIN_REQUEST);
+            });
         } else {
             new android.app.AlertDialog.Builder(this)
-                    .setTitle("이미 허용되어 있어요")
-                    .setMessage("기기 관리자 권한이 이미 허용되어 있습니다.\n\n"
-                            + "권한을 해제하려면 [앱 삭제 준비] 버튼을 눌러 주세요.")
+                    .setTitle("이미 활성화되어 있어요")
+                    .setMessage("기기 관리자 권한이 이미 활성화되어 있습니다.\n\n"
+                            + "권한을 해제하려면 [앱 삭제 준비]를 누른 뒤 기기 관리자 설정에서 Pocket Lock을 끄세요.\n\n"
+                            + getLegacyBiometricNotice())
                     .setPositiveButton("확인", null)
                     .show();
         }
     }
 
+    private String getLegacyBiometricNotice() {
+        return "기기 관리자 방식은 Android 보안 정책에 따라 잠금 후 지문·얼굴 대신 "
+                + "PIN·패턴·비밀번호를 요구할 수 있습니다. Pocket Lock 설정으로 바꿀 수 없습니다.";
+    }
+
+    private void showLegacyLockNotice(Runnable continueAction) {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("구형 Android 화면 잠금 안내")
+                .setMessage("현재 Android 버전은 기기 관리자 권한으로 화면을 잠급니다.\n\n"
+                        + "계속을 누르면 Android의 Pocket Lock 권한 확인 화면이 열립니다.\n\n"
+                        + getLegacyBiometricNotice())
+                .setNegativeButton("취소", null)
+                .setPositiveButton("설정 열기", (dialog, which) -> continueAction.run())
+                .show();
+    }
+
+    private void requestAccessibilityActivation() {
+        if (!ScreenLockManager.hasAccessibilityConsent(this)) {
+            startActivityForResult(
+                    new Intent(this, AccessibilityConsentActivity.class),
+                    ACCESSIBILITY_CONSENT_REQUEST);
+            return;
+        }
+        openAccessibilitySettings();
+    }
+
+    private void openAccessibilitySettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+        } catch (android.content.ActivityNotFoundException | SecurityException exception) {
+            try {
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
+            } catch (android.content.ActivityNotFoundException | SecurityException fallbackException) {
+                showSettingsUnavailableDialog();
+            }
+        }
+    }
+
+    private void showSettingsUnavailableDialog() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("설정을 열 수 없어요")
+                .setMessage("기기 설정에서 접근성 메뉴를 열고 Pocket Lock 서비스를 직접 켜 주세요.")
+                .setPositiveButton("확인", null)
+                .show();
+    }
+
+    private void continueAfterAccessibilityConsent() {
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                .putBoolean(ScreenLockManager.ACCESSIBILITY_CONSENT, true)
+                .apply();
+        openAccessibilitySettings();
+        updateUi();
+    }
+
     private void setPocketMode(boolean enabled) {
-        if (enabled && !devicePolicyManager.isAdminActive(adminComponent)) {
+        if (enabled && !ScreenLockManager.hasPermissionConfigured(this)) {
             pocketSwitch.setChecked(false);
-            requestAdminAccess();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                requestAccessibilityActivation();
+            } else {
+                requestAdminAccess();
+            }
             return;
         }
 
@@ -272,7 +363,9 @@ public class MainActivity extends Activity implements SensorEventListener {
     private void showUsageGuideMessage(int messageIndex) {
         String message;
         if (messageIndex == 0) {
-            message = "앱을 삭제 하려면 [앱 삭제 준비]에서 기기 관리자 권한을 해제해 주세요.";
+            message = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    ? "앱을 삭제하려면 [앱 삭제 준비]에서 앱 정보 화면을 여세요."
+                    : "앱을 삭제 하려면 [앱 삭제 준비]에서 기기 관리자 권한을 해제해 주세요.";
         } else if (messageIndex == 1) {
             message = "잠금이 안 되면 [기기 진단]에서 근접 센서를 테스트해 주세요.";
         } else {
@@ -323,11 +416,18 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     private void showUsageGuideDialog() {
+        String permissionGuide = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                ? "Android 9 이상에서는 자동 잠금을 위해 앱 내 안내에 동의하고 접근성 설정에서 "
+                        + "Pocket Lock 서비스를 직접 켜야 합니다."
+                : "기기 관리자 권한이 자동 화면 잠금에 필요합니다. 잠금 후 생체 인식 대신 "
+                        + "PIN·패턴·비밀번호를 요구할 수 있습니다.";
         new android.app.AlertDialog.Builder(this)
                 .setTitle("사용 안내")
-                .setMessage("처음 사용하신다면 [내 휴대폰에 맞게 자동 설정]으로 감지 방식을 먼저 설정해 주세요.\n\n"
+                .setMessage("처음 사용하신다면 먼저 권한을 설정해 주세요.\n"
+                        + permissionGuide + "\n\n"
+                        + "[내 휴대폰에 맞게 자동 설정]으로 감지 방식을 확인해 주세요.\n\n"
                         + "자동 잠금이 정상적으로 작동하지 않으면 [기기 진단]에서 근접 센서를 테스트하고 진단 결과를 개발자에게 보내주세요.\n\n"
-                        + "앱을 삭제 하려면 먼저 [앱 삭제 준비]를 눌러 기기 관리자 권한을 해제해 주세요.")
+                        + "앱 삭제와 권한 해제 방법은 [앱 삭제 준비]를 눌러 확인할 수 있습니다.")
                 .setPositiveButton("확인", null)
                 .show();
     }
@@ -368,47 +468,146 @@ public class MainActivity extends Activity implements SensorEventListener {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(ENABLED, false).apply();
         stopService(new Intent(this, PocketLockService.class));
 
+        if (devicePolicyManager.isAdminActive(adminComponent)) {
+            openDeviceAdminSettings();
+            return;
+        }
+
+        showUninstallOptions();
+    }
+
+    private void openDeviceAdminSettings() {
+        waitingForAdminDeactivation = true;
         Intent adminSettingsIntent = new Intent();
         adminSettingsIntent.setComponent(new ComponentName(
-            "com.android.settings",
-            "com.android.settings.Settings$DeviceAdminSettingsActivity"));
-        if (adminSettingsIntent.resolveActivity(getPackageManager()) != null) {
+                "com.android.settings",
+                "com.android.settings.Settings$DeviceAdminSettingsActivity"));
+        try {
+            if (adminSettingsIntent.resolveActivity(getPackageManager()) == null) {
+                throw new android.content.ActivityNotFoundException();
+            }
             startActivity(adminSettingsIntent);
-        } else {
-            startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+            return;
+        } catch (android.content.ActivityNotFoundException | SecurityException exception) {
+            // fall through to security settings
         }
+        try {
+            startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+        } catch (android.content.ActivityNotFoundException | SecurityException exception) {
+            try {
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
+            } catch (android.content.ActivityNotFoundException | SecurityException fallbackException) {
+                waitingForAdminDeactivation = false;
+                showSettingsUnavailableDialog();
+            }
+        }
+    }
+
+    private void showUninstallOptions() {
+        String message;
+        android.app.AlertDialog.Builder dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Pocket Lock 앱 삭제 안내");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            message = "휴대폰 설정에서 Pocket Lock 앱 정보를 열고 삭제할 수 있습니다.\n\n"
+                    + "접근성 서비스가 켜져 있어도 앱 삭제 전에 반드시 끌 필요는 없습니다.";
+            if (PocketLockAccessibilityService.isEnabled(this)) {
+                message += "\n\n원하면 [접근성 설정]에서 서비스를 직접 끌 수 있습니다.";
+                dialog.setNegativeButton("접근성 설정", (ignored, which) ->
+                        openAccessibilitySettings());
+            }
+        } else {
+            message = "기기 관리자 권한이 해제되었습니다. 휴대폰 설정의 앱 목록에서 "
+                    + "Pocket Lock을 찾아 삭제할 수 있습니다.";
+        }
+        dialog.setMessage(message)
+                .setNeutralButton("확인", null)
+                .setPositiveButton("앱 정보 열기", (ignored, which) -> openAppDetails())
+                .show();
+    }
+
+    private void openAppDetails() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:" + getPackageName()));
+        try {
+            startActivity(intent);
+        } catch (android.content.ActivityNotFoundException | SecurityException exception) {
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("앱 정보를 열 수 없어요")
+                    .setMessage("Android 설정의 앱 목록에서 Pocket Lock을 선택해 삭제해 주세요.")
+                    .setPositiveButton("확인", null)
+                    .show();
+        }
+    }
+
+    private void showAdminDeactivatedConfirmation() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("기기 관리자 권한이 해제되었습니다")
+                .setMessage("이제 휴대폰 설정에서 Pocket Lock 앱 정보를 열어 삭제할 수 있습니다.")
+                .setNegativeButton("나중에", null)
+                .setPositiveButton("앱 정보 열기", (dialog, which) -> openAppDetails())
+                .show();
     }
 
     private void updateUi() {
         boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
-        // Stays clickable so tapping explains how to release the permission.
-        adminButton.setAlpha(adminActive ? 0.45f : 1f);
+        boolean accessibilityEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                && PocketLockAccessibilityService.isEnabled(this);
+        boolean permissionConfigured = ScreenLockManager.hasPermissionConfigured(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            adminButton.setText("접근성 설정 열기");
+            adminButton.setAlpha(1f);
+        } else {
+            adminButton.setText("기기 관리자 설정 열기");
+            adminButton.setAlpha(adminActive ? 0.45f : 1f);
+        }
         boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
         boolean sensitive = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SENSITIVE, false);
         boolean proximityAvailable = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY) != null;
         ProximityReliability proximityReliability = ProximityReliabilityManager.get(this);
 
-        if (!adminActive) {
-            statusText.setText("먼저 기기 관리자 권한을 허용해 주세요.");
+        String permissionMessage = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                && !ScreenLockManager.hasAccessibilityConsent(this)) {
+            permissionMessage = "자동 화면 잠금을 사용하려면 권한 안내를 확인해 주세요.";
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !accessibilityEnabled) {
+            permissionMessage = "자동 잠금을 사용하려면 접근성 설정에서 Pocket Lock을 켜 주세요.";
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                && !PocketLockAccessibilityService.isConnected()) {
+            permissionMessage = "접근성 서비스 연결을 기다리는 중입니다.";
+        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P && !adminActive) {
+            permissionMessage = "먼저 기기 관리자 권한을 허용해 주세요.";
+        }
+
+        if (permissionMessage != null) {
+            statusText.setText(permissionMessage);
         } else if (!proximityAvailable && proximityReliability != ProximityReliability.UNAVAILABLE) {
             ProximityReliabilityManager.set(this, ProximityReliability.UNAVAILABLE);
             proximityReliability = ProximityReliability.UNAVAILABLE;
         }
-
-        if (enabled) {
+        if (permissionMessage == null && enabled) {
             if (proximityReliability == ProximityReliability.UNAVAILABLE || proximityReliability == ProximityReliability.UNRELIABLE) {
-                statusText.setText("감시중 · 조도·가속도·자세 센서로 주머니 상태를 확인합니다.");
+                statusText.setText(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                        ? "감시중 · 접근성 서비스 사용 중 · 조도·가속도·자세 센서로 확인합니다."
+                        : "감시중 · 조도·가속도·자세 센서로 주머니 상태를 확인합니다.");
             } else if (proximityAvailable) {
                 statusText.setText(sensitive
-                        ? "감시중 · 근접 센서가 가려지면 화면을 잠급니다."
-                        : "감시중 · 근접 센서로 주머니 상태를 확인합니다.");
+                        ? Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                                ? "감시중 · 접근성 서비스 사용 중 · 근접 센서가 가려지면 잠급니다."
+                                : "감시중 · 근접 센서가 가려지면 화면을 잠급니다."
+                        : Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                                ? "감시중 · 접근성 서비스 사용 중 · 근접 센서로 확인합니다."
+                                : "감시중 · 근접 센서로 주머니 상태를 확인합니다.");
             } else {
-                statusText.setText("감시중 · 조도·가속도·자세 센서로 주머니 상태를 확인합니다.");
+                statusText.setText(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                        ? "감시중 · 접근성 서비스 사용 중 · 조도·가속도·자세 센서로 확인합니다."
+                        : "감시중 · 조도·가속도·자세 센서로 주머니 상태를 확인합니다.");
             }
-        } else {
-            statusText.setText("준비됨 · 주머니 잠금 켜기를 활성화해 주세요.");
+        } else if (permissionMessage == null) {
+            statusText.setText(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    ? "접근성 서비스 사용 중 · 주머니 잠금을 켜면 자동 잠금합니다."
+                    : "준비됨 · 주머니 잠금 켜기를 활성화해 주세요.");
         }
-        pocketSwitch.setChecked(adminActive && enabled);
+        pocketSwitch.setChecked(permissionConfigured && enabled);
         updateDetectionModeSummary();
     }
 
@@ -423,25 +622,63 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onResume() {
         super.onResume();
+        activityResumed = true;
+        accessibilityStatusRefreshAttempts = 0;
+        usageGuideHandler.removeCallbacks(accessibilityStatusRefresh);
         startUsageGuideRotation();
         if (detectionTestRunning) {
             registerDetectionSensor();
         }
         updateUi();
-        boolean adminActive = devicePolicyManager.isAdminActive(adminComponent);
+        if (waitingForAdminDeactivation && !devicePolicyManager.isAdminActive(adminComponent)) {
+            waitingForAdminDeactivation = false;
+            showAdminDeactivatedConfirmation();
+        } else if (waitingForAdminDeactivation) {
+            waitingForAdminDeactivation = false;
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("기기 관리자 권한이 아직 활성화되어 있어요")
+                    .setMessage("앱을 삭제하려면 기기 관리자 설정에서 Pocket Lock을 선택해 권한을 해제해 주세요.")
+                    .setNegativeButton("확인", null)
+                    .setPositiveButton("설정 다시 열기", (dialog, which) -> {
+                        openDeviceAdminSettings();
+                    })
+                    .show();
+        }
         boolean enabled = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(ENABLED, false);
-        if (adminActive && enabled) {
+        boolean permissionConfigured = ScreenLockManager.hasPermissionConfigured(this);
+        if (permissionConfigured && enabled) {
             Intent serviceIntent = new Intent(this, PocketLockService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent);
             } else {
                 startService(serviceIntent);
             }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            stopService(new Intent(this, PocketLockService.class));
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            usageGuideHandler.postDelayed(accessibilityStatusRefresh, 500L);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ACCESSIBILITY_CONSENT_REQUEST) {
+            if (resultCode == RESULT_OK) {
+                continueAfterAccessibilityConsent();
+            } else {
+                updateUi();
+            }
+        } else if (requestCode == ADMIN_REQUEST) {
+            updateUi();
         }
     }
 
     @Override
     protected void onPause() {
+        activityResumed = false;
+        usageGuideHandler.removeCallbacks(accessibilityStatusRefresh);
         usageGuideHandler.removeCallbacks(usageGuideMarqueeStarter);
         usageGuideHandler.removeCallbacks(usageGuideMarqueeCompletion);
         usageGuideHandler.removeCallbacks(usageGuideFadeOut);

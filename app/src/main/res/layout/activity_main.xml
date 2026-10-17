@@ -111,7 +111,7 @@
             android:minHeight="56dp"
             android:paddingStart="28dp"
             android:paddingEnd="18dp"
-            android:text="기기 관리자 권한 허용"
+            android:text="접근성 설정 열기"
             android:textAllCaps="false"
             android:textColor="@color/ink"
             android:textSize="18sp"

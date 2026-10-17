@@ -42,6 +42,7 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
     private Sensor accelerometer;
     private Sensor lightSensor;
     private TableLayout deviceInfoValues;
+    private TextView adminText;
     private TableLayout adminValues;
     private TableLayout proximityValues;
     private TableLayout accelerometerValues;
@@ -106,6 +107,7 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
                 : sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
 
         deviceInfoValues = findViewById(R.id.deviceInfoValues);
+        adminText = findViewById(R.id.adminText);
         adminValues = findViewById(R.id.adminValues);
         proximityValues = findViewById(R.id.proximityValues);
         accelerometerValues = findViewById(R.id.accelerometerValues);
@@ -273,10 +275,24 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
     }
 
     private void updateAdminView() {
-        boolean active = isAdminActive();
         clearTable(adminValues);
-        addRow(adminValues, "상태", active ? "정상 · 활성화" : "사용 불가 · 비활성화");
-        lockTestStatus.setText("기기 관리자    " + (active ? "정상 · 활성화" : "사용 불가 · 비활성화"));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            boolean consented = ScreenLockManager.hasAccessibilityConsent(this);
+            boolean serviceEnabled = PocketLockAccessibilityService.isEnabled(this);
+            boolean connected = PocketLockAccessibilityService.isConnected();
+            adminText.setText("자동 잠금 권한");
+            addRow(adminValues, "방식", "Android 접근성 서비스");
+            addRow(adminValues, "앱 내 동의", consented ? "YES" : "NO");
+            addRow(adminValues, "설정 활성화", serviceEnabled ? "YES" : "NO");
+            addRow(adminValues, "서비스 연결", connected ? "YES" : "NO");
+            addRow(adminValues, "기존 기기 관리자", isAdminActive() ? "YES" : "NO");
+            lockTestStatus.setText("자동 잠금 권한    " + ScreenLockManager.getPermissionStatus(this));
+        } else {
+            boolean active = isAdminActive();
+            adminText.setText("기기 관리자");
+            addRow(adminValues, "상태", active ? "정상 · 활성화" : "사용 불가 · 비활성화");
+            lockTestStatus.setText("기기 관리자    " + (active ? "정상 · 활성화" : "사용 불가 · 비활성화"));
+        }
     }
 
     private void updateSensorViews() {
@@ -513,16 +529,19 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
     }
 
     private void testDeviceLock() {
-        if (!isAdminActive()) {
-            lockTestStatus.setText("기기 관리자    사용 불가 · 권한이 필요합니다.");
-            Toast.makeText(this, "기기 관리자 권한이 필요합니다.", Toast.LENGTH_SHORT).show();
+        if (!ScreenLockManager.hasPermissionConfigured(this)) {
+            lockTestStatus.setText("자동 잠금 권한    " + ScreenLockManager.getPermissionStatus(this));
+            Toast.makeText(this, Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    ? "접근성 안내에 동의하고 서비스를 켜 주세요."
+                    : "기기 관리자 권한이 필요합니다.", Toast.LENGTH_LONG).show();
             return;
         }
-        try {
-            devicePolicyManager.lockNow();
-            lockTestStatus.setText("기기 관리자    정상 · 잠금 요청 전송됨");
-        } catch (SecurityException exception) {
-            lockTestStatus.setText("기기 관리자    사용 불가 · 잠금 요청 실패");
+        if (ScreenLockManager.requestLock(this)) {
+            lockTestStatus.setText(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    ? "접근성 서비스    잠금 요청 수락됨"
+                    : "기기 관리자    잠금 요청 전송됨");
+        } else {
+            lockTestStatus.setText("화면 잠금 요청 실패 · 권한과 서비스 연결을 확인해 주세요.");
             Toast.makeText(this, "화면 잠금 요청에 실패했습니다.", Toast.LENGTH_SHORT).show();
         }
     }
@@ -540,7 +559,13 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
                 + "App Version: " + BuildConfig.VERSION_NAME + "\n\n"
                 + "Device\nManufacturer: " + Build.MANUFACTURER + "\nModel: " + Build.MODEL
                 + "\nAndroid: " + Build.VERSION.RELEASE + "\nSDK: " + Build.VERSION.SDK_INT + "\n\n"
-                + "Device Admin\nActive: " + (isAdminActive() ? "YES" : "NO") + "\n\n"
+                + (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                        ? "Automatic Lock Permission\nMethod: Accessibility Service\nConsent: "
+                                + (ScreenLockManager.hasAccessibilityConsent(this) ? "YES" : "NO")
+                                + "\nEnabled: " + (PocketLockAccessibilityService.isEnabled(this) ? "YES" : "NO")
+                                + "\nConnected: " + (PocketLockAccessibilityService.isConnected() ? "YES" : "NO")
+                                + "\nLegacy Device Admin Active: " + (isAdminActive() ? "YES" : "NO") + "\n\n"
+                        : "Device Admin\nActive: " + (isAdminActive() ? "YES" : "NO") + "\n\n")
                 + "Proximity Sensor\n" + sensorSummary(proximitySensor, proximityEventCount)
                 + "Current Value: " + (proximityEventCount == 0 ? "-" : format(proximityValue)) + "\n\n"
                 + "Minimum Value: " + (proximityEventCount == 0 ? "-" : format(proximityMinimum)) + "\n"
@@ -556,7 +581,7 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
                 + "Minimum Value: " + (lightEventCount == 0 ? "-" : format(lightMinimum)) + " lux\n"
                 + "Maximum Observed Value: " + (lightEventCount == 0 ? "-" : format(lightMaximumObserved)) + " lux\n"
                 + "Last Event: " + lightLastEvent + "\n\n"
-                + "Lock Test\nDevice Admin Available: " + (isAdminActive() ? "YES" : "NO") + "\n\n"
+                + "Lock Test\nPermission Status: " + ScreenLockManager.getPermissionStatus(this) + "\n\n"
                 + "Sensor Test\nStatus: " + (sensorTestRunning ? "RUNNING" : "STOPPED") + "\n"
                 + "Duration: " + formatDuration(sensorTestRunning
                 ? System.currentTimeMillis() - sensorTestStartedAt : 0L) + "\n\n"

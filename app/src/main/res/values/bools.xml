@@ -1,0 +1,3 @@
+<resources>
+    <bool name="accessibility_lock_supported">false</bool>
+</resources>

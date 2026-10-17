@@ -1,25 +1,29 @@
 # 개발·운영 및 개선 가이드
 
-이 문서는 Pocket Lock을 수정하고, 기기별 동작을 확인하고, 릴리스하는 절차를 정리합니다. 현재 앱 버전은 `1.0.5` (`versionCode` 26)입니다.
+이 문서는 Pocket Lock을 수정하고, 기기별 동작을 확인하고, 릴리스하는 절차를 정리합니다. 현재 앱 버전은 `1.0.6` (`versionCode` 27)입니다.
 
 ## 주요 코드 위치
 
 | 작업 | 파일 | 담당 내용 |
 | --- | --- | --- |
-| 메인 화면, 설정, 서비스 시작/중지, 감지 방식 테스트 | [MainActivity.java](../app/src/main/java/com/innoshiftconsult/pocketlock/MainActivity.java), [activity_main.xml](../app/src/main/res/layout/activity_main.xml) | Device Admin 안내, 민감도 저장, `판단하기`, 상태 표시 |
+| 메인 화면, 설정, 서비스 시작/중지, 감지 방식 테스트 | [MainActivity.java](../app/src/main/java/com/innoshiftconsult/pocketlock/MainActivity.java), [activity_main.xml](../app/src/main/res/layout/activity_main.xml) | Android 버전별 잠금 권한 안내, 민감도 저장, 감지 방식 테스트, 상태 표시 |
 | 사용자 매뉴얼 화면 | [ManualActivity.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ManualActivity.java), [activity_manual.xml](../app/src/main/res/layout/activity_manual.xml) | 앱 설정, 감지 방식, 진단 및 문제 해결 안내 |
-| 센서 구독, 감지 방식 선택, 실제 화면 잠금 | [PocketLockService.java](../app/src/main/java/com/innoshiftconsult/pocketlock/PocketLockService.java) | 센서 listener 수명, 서비스 잠금 확인, `lockNow()` |
+| 센서 구독 및 감지 방식 선택 | [PocketLockService.java](../app/src/main/java/com/innoshiftconsult/pocketlock/PocketLockService.java) | 센서 listener 수명, 기존 주머니 감지 조건 및 중복 잠금 방지 |
+| 버전별 화면 잠금 | [ScreenLockManager.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ScreenLockManager.java), [PocketLockAccessibilityService.java](../app/src/main/java/com/innoshiftconsult/pocketlock/PocketLockAccessibilityService.java) | Android 9 이상은 접근성 전역 잠금 동작, Android 8.1 이하는 Device Admin `lockNow()` |
+| 접근성 안내와 시스템 등록 | [AccessibilityConsentActivity.java](../app/src/main/java/com/innoshiftconsult/pocketlock/AccessibilityConsentActivity.java), [accessibility_service_config.xml](../app/src/main/res/xml/accessibility_service_config.xml), [AndroidManifest.xml](../app/src/main/AndroidManifest.xml) | 별도 고지·동의, 최소 접근성 설정, Android 서비스 등록 |
+| 재부팅 후 서비스 복원 | [PocketLockBootReceiver.java](../app/src/main/java/com/innoshiftconsult/pocketlock/PocketLockBootReceiver.java) | 잠금 기능이 켜져 있고 OS별 잠금 권한이 설정된 경우에만 감시 서비스 복원 |
 | 복합 센서 판단 기준 | [PocketSensorFusionDetector.java](../app/src/main/java/com/innoshiftconsult/pocketlock/PocketSensorFusionDetector.java) | 조도·가속도·자세 융합, 확인 시간, 조도 센서 없는 기기의 대체 경로 |
 | 근접 센서 신뢰도와 모드 | [ProximityReliabilityManager.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ProximityReliabilityManager.java), [ProximityReliability.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ProximityReliability.java), [ProximityDetectionMode.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ProximityDetectionMode.java) | 저장된 신뢰도와 근접/복합 감지 방식 연결 |
 | 기기·센서 진단과 결과 복사 | [DiagnosticsActivity.java](../app/src/main/java/com/innoshiftconsult/pocketlock/DiagnosticsActivity.java), [activity_diagnostics.xml](../app/src/main/res/layout/activity_diagnostics.xml) | 센서 정보, 수동 테스트, 이벤트 로그, 잠금 테스트, 클립보드 복사 |
-| 앱 표시 문구와 버전 | [strings.xml](../app/src/main/res/values/strings.xml), [app/build.gradle.kts](../app/build.gradle.kts) | 앱 표시 버전, Device Admin 설명, 빌드 버전 |
+| 앱 표시 문구와 버전 | [strings.xml](../app/src/main/res/values/strings.xml), [app/build.gradle.kts](../app/build.gradle.kts) | 앱 표시 버전, Device Admin 및 접근성 서비스 설명, 빌드 버전 |
 | 사용자·개인정보 안내 | [README.md](../README.md), [privacy-policy.html](privacy-policy.html) | 사용법, 제한사항, 데이터 처리 안내 |
+| Google Play 접근성 API 제출 자료 | [ACCESSIBILITY_POLICY.md](ACCESSIBILITY_POLICY.md) | 접근성 API 범위, 사용자 동의, Play Console 문안 및 심사 영상 시나리오 |
 
 근접 센서 판단 코드를 바꿀 때는 복합 센서 감지기만으로 충분한지 먼저 확인하세요. 근접 센서 경로와 복합 센서 경로는 같은 서비스 안에서 분기되므로, 한 경로의 변경이 다른 경로까지 바꾸지 않도록 검증합니다.
 
 ## 감지 방식과 조정 지점
 
-앱을 처음 설정할 때 메인 화면의 `판단하기`를 실행해 근접 센서를 가렸다가 노출합니다. `NEAR`와 `FAR` 상태 변화가 각각 2회 이상 확인되면 근접 센서를 신뢰 가능한 것으로 기록합니다. 센서가 없으면 `UNAVAILABLE`, 센서가 있지만 정상 변화가 확인되지 않으면 `UNRELIABLE`로 기록하고 복합 센서 방식을 사용합니다. 진단 화면의 근접 센서 테스트도 신뢰도 기록을 갱신합니다.
+앱을 처음 설정할 때 메인 화면의 `내 휴대폰에 맞게 자동 설정`을 실행해 근접 센서를 가렸다가 노출합니다. `NEAR`와 `FAR` 상태 변화가 각각 2회 이상 확인되면 근접 센서를 신뢰 가능한 것으로 기록합니다. 센서가 없으면 `UNAVAILABLE`, 센서가 있지만 정상 변화가 확인되지 않으면 `UNRELIABLE`로 기록하고 복합 센서 방식을 사용합니다. 진단 화면의 근접 센서 테스트도 신뢰도 기록을 갱신합니다.
 
 근접 센서 방식의 현재 동작은 `PocketLockService`에 있습니다.
 
@@ -31,7 +35,15 @@
 
 - 조도 센서가 있으면 기존 30 lux 이하 조건 또는 밝은 기준값 대비 85% 이상 조도 감소 조건을 확인합니다. 강한 조도 감소 경로는 최근 5초 안에 정상 자세에서 뒤집힌 전환이 있어야 하며, 두 경로 모두 최근 움직임과 세로 방향 자세가 함께 있어야 합니다.
 - 조도 센서가 없으면 먼저 평상시 자세를 관찰한 뒤, Y축이 -7 이하로 바뀌고 가속도 샘플 간 변화가 1.5를 넘었는지 확인합니다. 확정된 상태는 평상시 자세로 돌아올 때까지 유지합니다.
-- 복합 센서 후보는 600ms 확인을 거친 뒤 서비스의 추가 잠금 확인을 통과해야 `lockNow()`를 호출합니다.
+- 복합 센서 후보는 600ms 확인을 거친 뒤 기존 서비스의 추가 잠금 확인을 통과해야 버전별 잠금 관리자를 호출합니다.
+
+## 화면 잠금 권한 경로
+
+- Android 9(API 28) 이상은 앱 안의 별도 접근성 고지 화면에서 사용자가 동의하고, Android 접근성 설정에서 서비스를 직접 활성화해야 합니다. 연결된 서비스만 `GLOBAL_ACTION_LOCK_SCREEN`을 실행합니다. 실패하거나 연결이 끊겨도 Device Admin으로 자동 전환하지 않습니다.
+- Android 8.1(API 27) 이하는 고지 후 Device Admin을 활성화하고 `DevicePolicyManager.lockNow()`를 사용합니다. 이 방식은 잠금 뒤 생체 인증 대신 PIN·패턴·비밀번호를 요구할 수 있음을 안내합니다.
+- 접근성 서비스 설정은 화면 내용을 읽지 않고, 이벤트 유형을 구독하지 않으며, 입력 감시·제스처·스크린샷 기능을 요청하지 않습니다. 동의 여부와 Android 설정의 서비스 활성화 여부는 별도로 확인합니다.
+- 앱 잠금 설정이 ON인 경우에만 부팅 완료 시 감시 서비스를 다시 시작합니다. Android가 시작을 거부하면 오류를 로그에 남기며, 앱을 다음에 열 때 상태를 다시 확인합니다.
+- 생체 인식 해제 동작과 화면 캡처 정책은 제조사별 실기기 검증이 필요합니다. 앱은 화면 캡처를 비활성화하는 Device Admin 정책이나 `FLAG_SECURE`를 사용하지 않습니다.
 
 임계값을 바꿀 때는 실제 진단 로그의 기기별 센서 단위와 샘플 주기를 확인하고, 임계값 경계·센서 미지원·잡음·자세 유지·자세 복귀 사례를 테스트에 포함합니다. 상수만 조정하고 끝내지 말고 아래 단위 테스트와 실제 기기 검증을 함께 갱신합니다.
 
@@ -50,10 +62,18 @@
 
 ## 실제 기기 운영·진단
 
-1. 앱에서 Device Admin을 활성화하고 `판단하기`를 실행합니다. 근접 센서가 안정적으로 반응하지 않는 기기는 복합 센서 방식인지 확인합니다.
+1. Android 9 이상에서는 권한 안내에 동의하고 접근성 서비스를 직접 켭니다. Android 8.1 이하는 안내를 읽고 Device Admin을 활성화합니다. 이어서 `내 휴대폰에 맞게 자동 설정`을 실행합니다.
 2. 복합 센서 방식에서는 실제 사용 자세로 휴대폰을 주머니에 넣고, 조도 센서가 없는 경우에도 가속도계가 있는지 확인합니다. 가속도계가 없으면 이 대체 방식으로 주머니 상태를 판단할 수 없습니다.
-3. 여러 차례 반복하고, 화면 잠금 실패가 감지 문제인지 권한 문제인지 나눠 봅니다. 진단 화면의 `화면 잠금 테스트`는 감지 알고리즘을 거치지 않고 Device Admin과 `lockNow()`만 확인합니다.
+3. 여러 차례 반복하고, 화면 잠금 실패가 감지 문제인지 권한 문제인지 나눠 봅니다. 진단 화면의 `화면 잠금 테스트`는 감지 알고리즘을 거치지 않고 해당 Android 버전의 잠금 권한 경로만 시험합니다.
 4. `센서 테스트 시작`으로 센서 이벤트를 기록하고 종료 후 센서 이름, 이벤트 횟수, 현재값과 로그를 확인합니다. 로그는 메모리에서 최대 200개 항목을 유지합니다.
+5. Android 9 이상에서는 지문·얼굴·PIN·패턴 잠금 해제 결과를 전원 버튼 잠금과 비교하고, 서비스 연결 해제·재연결 및 접근성 권한 철회를 시험합니다. Android 8.1 이하에서는 생체 인식 대신 강한 인증이 요구될 수 있는지 확인합니다.
+6. 앱 잠금을 켠 상태로 재부팅하여 설정된 권한이 있는 경우 감시 서비스가 복원되는지 확인합니다. 권한이 없거나 철회된 경우 잠금을 요청하지 않는지 확인합니다.
+
+### Google Play 접근성 API 제출 준비
+
+Pocket Lock은 접근성 도구가 아니므로 `isAccessibilityTool`을 `true`로 선언하지 않습니다. 비접근성 앱의 명시적 인앱 고지·동의가 필요하며, 타깃 SDK에 따른 AccessibilityService API 선언을 Play Console에서 제출해야 합니다. 검토·승인은 보장되지 않습니다.
+
+제출 전 공식 [AccessibilityService API 정책](https://support.google.com/googleplay/android-developer/answer/10964491)을 다시 확인하고, 실제 앱 실행 → 고지 화면 → 동의와 취소 → Android 설정에서 서비스 활성화 → 감지 조건에 따른 화면 잠금이 포함된 짧은 영상을 준비합니다. 서비스 동작·데이터 처리·개인정보처리방침·Data safety 응답이 서로 일치하는지 확인합니다.
 
 `진단 결과 복사`에는 제조사·모델·Android/SDK 버전, 센서 정보와 이벤트 로그가 포함되어 시스템 클립보드로 복사됩니다. 전화번호, IMEI, Android ID, 계정, 위치 등은 포함하지 않지만 기기 모델과 센서 조합은 기기를 식별하는 단서가 될 수 있으므로 사용자가 공유 대상을 확인하도록 안내합니다. 개인정보 처리 방식이 바뀌면 [개인정보처리방침](privacy-policy.html)과 시행일도 함께 갱신합니다.
 

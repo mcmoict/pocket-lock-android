@@ -42,19 +42,80 @@
 
         <TextView
             style="@style/DiagnosticDetails"
+            android:id="@+id/manualIntro"
             android:layout_marginTop="12dp"
-            android:text="처음 사용하시나요?\n\n1. 권한 허용  →  2. 감지 방식 설정  →  3. 잠금 켜기\n\nPocket Lock은 휴대폰이 주머니에 들어간 것을 감지해 화면을 자동으로 잠그는 앱이에요. 아래 순서대로 한 번만 설정하세요.\n\n그림을 누르면 확대해서 볼 수 있어요." />
+            android:text="처음 사용하시나요?\n\n1. 권한 허용  →  2. 감지 방식 설정  →  3. 잠금 켜기\n\nPocket Lock은 휴대폰이 주머니에 들어간 것을 감지해 화면을 자동으로 잠그는 앱입니다. 아래 순서에 따라 설정해 주세요.\n\n그림을 누르면 확대해서 확인할 수 있습니다." />
 
         <!-- 1. 권한 -->
         <TextView
             style="@style/DiagnosticSection"
+            android:id="@+id/manualPermissionHeading"
             android:layout_marginTop="22dp"
-            android:text="① 기기 관리자 권한 허용" />
+            android:text="① 화면 잠금 권한 설정" />
         <TextView
             style="@style/DiagnosticDetails"
+            android:id="@+id/manualPermissionDetails"
             android:layout_marginTop="8dp"
-            android:text="• 메인 화면의 [기기 관리자 권한 허용]을 누릅니다.\n• [이 기기 관리자 앱 활성화]를 선택합니다.\n\n※ 화면을 잠그려면 꼭 필요한 권한이에요." />
+            android:text="• 메인 화면에서 [기기 관리자 권한 허용]을 선택합니다.\n• [이 기기 관리자 앱 활성화]를 선택합니다.\n\n※ 화면 잠금에 필요한 권한입니다." />
         <LinearLayout
+            android:id="@+id/accessibilityImageColumn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+                <LinearLayout style="@style/ManualImageColumn">
+                    <ImageView
+                        style="@style/ManualImage"
+                        android:contentDescription="Pocket Lock 메인 화면에서 접근성 설정을 여는 단계"
+                        android:src="@drawable/manual_accessibility_01" />
+                    <TextView
+                        style="@style/ManualCaption"
+                        android:text="① 접근성 설정 열기" />
+                </LinearLayout>
+                <LinearLayout style="@style/ManualImageColumn">
+                    <ImageView
+                        style="@style/ManualImage"
+                        android:contentDescription="접근성 설정 목록에서 Pocket Lock을 선택하는 단계"
+                        android:src="@drawable/manual_accessibility_02" />
+                    <TextView
+                        style="@style/ManualCaption"
+                        android:text="② Pocket Lock 선택" />
+                </LinearLayout>
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+                <LinearLayout style="@style/ManualImageColumn">
+                    <ImageView
+                        style="@style/ManualImage"
+                        android:contentDescription="Pocket Lock 접근성 서비스를 켜는 단계"
+                        android:src="@drawable/manual_accessibility_03" />
+                    <TextView
+                        style="@style/ManualCaption"
+                        android:text="③ Pocket Lock 서비스 사용 설정" />
+                </LinearLayout>
+                <LinearLayout style="@style/ManualImageColumn">
+                    <ImageView
+                        style="@style/ManualImage"
+                        android:contentDescription="접근성 설정 목록에서 Pocket Lock이 사용 중인지 확인하는 단계"
+                        android:src="@drawable/manual_accessibility_04" />
+                    <TextView
+                        style="@style/ManualCaption"
+                        android:text="④ 서비스 사용 여부 확인" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/legacyAdminImageRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
@@ -67,7 +128,7 @@
                     android:src="@drawable/manual_main_off" />
                 <TextView
                     style="@style/ManualCaption"
-                    android:text="① 기기 관리자 권한 허용 버튼을 누르세요" />
+                    android:text="① 기기 관리자 권한 허용" />
             </LinearLayout>
             <LinearLayout style="@style/ManualImageColumn">
                 <ImageView
@@ -76,7 +137,7 @@
                     android:src="@drawable/manual_admin" />
                 <TextView
                     style="@style/ManualCaption"
-                    android:text="② [활성화]를 누르세요" />
+                    android:text="② [활성화] 선택" />
             </LinearLayout>
         </LinearLayout>
 
@@ -88,7 +149,7 @@
         <TextView
             style="@style/DiagnosticDetails"
             android:layout_marginTop="8dp"
-            android:text="• [주머니 감지 방식]의 [내 휴대폰에 맞게 자동 설정]을 누릅니다.\n• 휴대폰을 통화할 때처럼 얼굴 가까이 댔다 떼기를 2~3번 반복합니다.\n• [완료하기]를 누르면 끝!\n\n• 근접 센서 방식: 센서가 가려지면 잠금 (FAR → NEAR → FAR)\n• 복합 센서 방식: 근접 센서가 불안정한 폰에서 조도·가속도·자세 센서를 함께 사용" />
+            android:text="• [주머니 감지 방식]에서 [내 휴대폰에 맞게 자동 설정]을 누릅니다.\n• 통화할 때처럼 휴대폰을 얼굴 가까이에 댔다가 떼는 동작을 2~3회 반복합니다.\n• [완료하기]를 눌러 설정을 마칩니다.\n\n• 근접 센서 방식: 센서가 가려지면 잠금 상태로 전환됩니다 (FAR → NEAR → FAR)\n• 복합 센서 방식: 근접 센서 반응이 불안정한 기기에서 조도·가속도·자세 센서를 함께 사용합니다." />
 
         <TextView
             style="@style/DiagnosticSection"
@@ -96,9 +157,38 @@
             android:text="③ 주머니 잠금 켜기" />
         <TextView
             style="@style/DiagnosticDetails"
+            android:id="@+id/manualLockOnDetails"
             android:layout_marginTop="8dp"
-            android:text="• [주머니 잠금 켜기] 스위치를 켭니다.\n• 아래 문구가 보이면 정상 동작 중이에요.\n\n\'감시중 · 근접 센서로 주머니 상태를 확인합니다.\'\n또는\n\'감시중 · 조도·가속도·자세 센서로 주머니 상태를 확인합니다.\'" />
+            android:text="• [주머니 잠금 켜기] 스위치를 켭니다.\n• 아래 문구가 표시되면 정상적으로 작동 중입니다.\n\n\'감시중 · 근접 센서로 주머니 상태를 확인합니다.\'\n또는\n\'감시중 · 조도·가속도·자세 센서로 주머니 상태를 확인합니다.\'" />
         <LinearLayout
+            android:id="@+id/accessibilityLockOnImageRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:visibility="gone">
+            <LinearLayout style="@style/ManualImageColumn">
+                <ImageView
+                    style="@style/ManualImage"
+                    android:contentDescription="근접 센서 방식으로 감시 중인 화면"
+                    android:src="@drawable/manual_main_on_proximity_accessibility" />
+                <TextView
+                    style="@style/ManualCaption"
+                    android:text="근접 센서 방식" />
+            </LinearLayout>
+            <LinearLayout style="@style/ManualImageColumn">
+                <ImageView
+                    style="@style/ManualImage"
+                    android:contentDescription="복합 센서 방식으로 감시 중인 화면"
+                    android:src="@drawable/manual_main_on_fusion_accessibility" />
+                <TextView
+                    style="@style/ManualCaption"
+                    android:text="복합 센서 방식" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/legacyLockOnImageRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
@@ -108,7 +198,7 @@
                 <ImageView
                     style="@style/ManualImage"
                     android:contentDescription="근접 센서 방식으로 감시 중인 화면"
-                    android:src="@drawable/manual_main_on_proximity" />
+                    android:src="@drawable/manual_main_on_proximity_admin" />
                 <TextView
                     style="@style/ManualCaption"
                     android:text="근접 센서 방식" />
@@ -117,7 +207,7 @@
                 <ImageView
                     style="@style/ManualImage"
                     android:contentDescription="복합 센서 방식으로 감시 중인 화면"
-                    android:src="@drawable/manual_main_on_fusion" />
+                    android:src="@drawable/manual_main_on_fusion_admin" />
                 <TextView
                     style="@style/ManualCaption"
                     android:text="복합 센서 방식" />
@@ -132,7 +222,7 @@
         <TextView
             style="@style/DiagnosticDetails"
             android:layout_marginTop="8dp"
-            android:text="• 처음에는 「보통」을 권장해요.\n• 주머니에 넣어도 잘 안 잠기면 「민감」으로 바꿔 보세요.\n• 의도하지 않았는데 자주 잠기면 다시 「보통」으로 바꾸세요.\n\n※ 휴대폰을 뒤집어 세로로 넣으면 가장 잘 동작해요." />
+            android:text="• 처음에는 「보통」으로 사용하는 것을 권장합니다.\n• 주머니에 넣어도 화면이 잠기지 않으면 「민감」으로 조정합니다.\n• 의도하지 않게 잠기는 경우에는 「보통」으로 변경합니다.\n\n※ 휴대폰을 뒤집어 세로로 넣으면 감지 성능이 가장 좋습니다." />
 
         <!-- 잠금이 안 될 때 -->
         <TextView
@@ -142,7 +232,7 @@
         <TextView
             style="@style/DiagnosticDetails"
             android:layout_marginTop="8dp"
-            android:text="[기기 진단]에서 센서 테스트를 하고 결과를 개발자에게 보내 주세요.\n\n① 먼저 [주머니 잠금 켜기]를 끕니다.\n② [기기 진단]을 열고 [근접 센서 테스트]를 누릅니다.\n③ 휴대폰을 세로로 호주머니에 넣었다가 빼기를 3번 반복합니다.\n④ [근접 센서 테스트 종료]를 누릅니다.\n⑤ 화면 맨 아래 [진단 결과 복사]를 누릅니다.\n⑥ 메일을 열어 붙여넣고 개발자에게 보냅니다.\n\n받는 사람: mcmoict@gmail.com" />
+            android:text="화면이 잠기지 않는 경우 아래 순서대로 테스트한 후, 진단 결과를 개발자에게 보내 주시기 바랍니다.\n\n① [주머니 잠금 켜기]를 끕니다.\n② [기기 진단]에서 [근접 센서 테스트]를 누릅니다.\n③ 휴대폰을 세로로 주머니에 넣었다가 빼는 동작을 3회 반복합니다.\n④ [근접 센서 테스트 종료]를 누릅니다.\n⑤ 화면 아래쪽의 [진단 결과 복사]를 누릅니다.\n⑥ 메일에 결과를 붙여넣어 개발자에게 전달합니다." />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -190,7 +280,7 @@
                     android:src="@drawable/manual_diag_result" />
                 <TextView
                     style="@style/ManualCaption"
-                    android:text="결과가 \'불안정\'이어도 괜찮아요. 그대로 복사해 보내 주세요." />
+                    android:text="결과가 \'불안정\'으로 표시되어도 해당 결과를 그대로 전달해 주시면 됩니다." />
             </LinearLayout>
         </LinearLayout>
 
@@ -201,8 +291,9 @@
             android:text="앱을 삭제하려면" />
         <TextView
             style="@style/DiagnosticDetails"
+            android:id="@+id/manualUninstallDetails"
             android:layout_marginTop="8dp"
-            android:text="① [앱 삭제 준비]를 누릅니다.\n② Pocket Lock의 기기 관리자 권한을 끕니다.\n③ 설정의 앱 목록에서 삭제합니다.\n\n※ 권한을 끄지 않으면 앱을 삭제할 수 없어요." />
+            android:text="① [앱 삭제 준비]를 선택합니다.\n② Pocket Lock의 기기 관리자 권한을 해제합니다.\n③ 설정의 앱 목록에서 Pocket Lock을 삭제합니다.\n\n※ 권한을 해제한 뒤 앱을 삭제할 수 있습니다." />
 
         <TextView
             style="@style/DiagnosticSection"
@@ -211,6 +302,6 @@
         <TextView
             style="@style/DiagnosticDetails"
             android:layout_marginTop="8dp"
-            android:text="① 권한 허용 → ② 감지 방식 자동 설정 → ③ 잠금 켜기 → ④ 휴대폰을 주머니에 넣어 테스트" />
+            android:text="① 권한 허용 → ② 감지 방식 자동 설정 → ③ 주머니 잠금 켜기 → ④ 주머니에 넣어 테스트" />
     </LinearLayout>
 </ScrollView>

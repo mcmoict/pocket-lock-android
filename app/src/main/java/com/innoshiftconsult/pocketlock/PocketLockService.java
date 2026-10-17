@@ -5,8 +5,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -38,8 +36,6 @@ public class PocketLockService extends Service implements SensorEventListener {
     private Sensor accelerometer;
     private Sensor lightSensor;
     private PocketSensorFusionDetector pocketSensorFusionDetector;
-    private DevicePolicyManager devicePolicyManager;
-    private ComponentName adminComponent;
     private boolean lockedForCurrentCover;
     private boolean lockPending;
     private boolean proximityCovered;
@@ -53,9 +49,8 @@ public class PocketLockService extends Service implements SensorEventListener {
         lockPending = false;
         if (proximityCovered && (currentDetectionMode == ProximityDetectionMode.SENSOR_FUSION
             || isSensitiveMode() || isUpsideDown)
-                && !lockedForCurrentCover && devicePolicyManager.isAdminActive(adminComponent)) {
-            lockedForCurrentCover = true;
-            devicePolicyManager.lockNow();
+                && !lockedForCurrentCover && ScreenLockManager.hasPermissionConfigured(this)) {
+            lockedForCurrentCover = ScreenLockManager.requestLock(this);
         }
     };
 
@@ -71,8 +66,6 @@ public class PocketLockService extends Service implements SensorEventListener {
         lightSensor = sensorManager == null ? null : sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
         pocketSensorFusionDetector = new PocketSensorFusionDetector(lightSensor != null);
         isUpsideDown = accelerometer == null;
-        devicePolicyManager = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
-        adminComponent = new ComponentName(this, PocketLockAdminReceiver.class);
         handler = new Handler(Looper.getMainLooper());
         if (proximitySensor != null) {
             sensorManager.registerListener(this, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
