@@ -56,6 +56,58 @@ public class ProximityReliabilityManagerTest {
     }
 
     @Test
+    public void fusionDetectorAcceptsEightyFivePercentDropWithRecentInversion() {
+        PocketSensorFusionDetector detector = new PocketSensorFusionDetector();
+        detector.onLight(500f, 0L);
+        detector.onAccelerometer(0f, 9.81f, 0f, 100L);
+        detector.onLight(75f, 200L);
+        detector.onAccelerometer(0.2f, -9.4f, 0.3f, 300L);
+
+        assertFalse(detector.shouldLock());
+
+        detector.onLight(75f, 500L);
+        assertFalse(detector.shouldLock());
+
+        detector.onAccelerometer(0.2f, -9.4f, 0.3f, 900L);
+        assertTrue(detector.shouldLock());
+    }
+
+    @Test
+    public void fusionDetectorAcceptsDropAboveFormerLuxLimit() {
+        PocketSensorFusionDetector detector = new PocketSensorFusionDetector();
+        detector.onLight(2000f, 0L);
+        detector.onAccelerometer(0f, 9.81f, 0f, 100L);
+        detector.onLight(280f, 200L);
+        detector.onAccelerometer(0.2f, -9.4f, 0.3f, 300L);
+
+        assertFalse(detector.shouldLock());
+
+        detector.onAccelerometer(0.2f, -9.4f, 0.3f, 900L);
+        assertTrue(detector.shouldLock());
+    }
+
+    @Test
+    public void fusionDetectorRejectsStrongDropWithoutRecentInversion() {
+        PocketSensorFusionDetector detector = new PocketSensorFusionDetector();
+        detector.onLight(500f, 0L);
+        detector.onLight(70f, 200L);
+        detector.onAccelerometer(0.2f, -9.4f, 0.3f, 300L);
+
+        assertFalse(detector.shouldLock());
+    }
+
+    @Test
+    public void fusionDetectorRejectsStrongDropAfterInversionWindowExpires() {
+        PocketSensorFusionDetector detector = new PocketSensorFusionDetector();
+        detector.onLight(500f, 0L);
+        detector.onAccelerometer(0f, 9.81f, 0f, 500L);
+        detector.onLight(70f, 6000L);
+        detector.onAccelerometer(0.2f, -9.4f, 0.3f, 6000L);
+
+        assertFalse(detector.shouldLock());
+    }
+
+    @Test
     public void fusionDetectorUsesInvertedStableOrientationWithoutLightSensor() {
         PocketSensorFusionDetector detector = new PocketSensorFusionDetector(false);
         detector.onAccelerometer(-1f, 4f, 9f, 0L);

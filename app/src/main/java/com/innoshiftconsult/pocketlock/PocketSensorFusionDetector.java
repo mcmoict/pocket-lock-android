@@ -10,11 +10,13 @@ public class PocketSensorFusionDetector {
     private static final long LIGHT_WINDOW_MS = 6000L;
     private static final long MOTION_WINDOW_MS = 5000L;
     private static final long EVENT_CORRELATION_WINDOW_MS = 5000L;
+    private static final long ORIENTATION_TRANSITION_WINDOW_MS = 5000L;
     private static final long POCKET_CONFIRMATION_MS = 600L;
 
     private static final float DARK_LUX_THRESHOLD = 30.0f;
     private static final float MIN_BASELINE_LUX = 20.0f;
     private static final float LIGHT_DROP_RATIO = 0.50f;
+    private static final float STRONG_LIGHT_DROP_RATIO = 0.15f;
     private static final float MOTION_THRESHOLD = 0.25f;
     private static final float ACCELERATION_CHANGE_THRESHOLD = 1.5f;
     private static final float ORIENTATION_VERTICAL_THRESHOLD = 3.0f;
@@ -32,6 +34,7 @@ public class PocketSensorFusionDetector {
     private float previousZ;
     private boolean hasPreviousAcceleration;
     private boolean hasObservedUprightOrientation;
+    private long lastUprightOrientationAt = -1L;
     private boolean noLightPocketLatched;
 
     public PocketSensorFusionDetector() {
@@ -53,6 +56,7 @@ public class PocketSensorFusionDetector {
         currentZ = z;
         if (currentY >= ORIENTATION_VERTICAL_THRESHOLD) {
             hasObservedUprightOrientation = true;
+            lastUprightOrientationAt = timestampMs;
             noLightPocketLatched = false;
         }
         float magnitude = (float) Math.sqrt(x * x + y * y + z * z);
@@ -107,9 +111,19 @@ public class PocketSensorFusionDetector {
         boolean hasBrightBaseline = recentMaxLux >= MIN_BASELINE_LUX;
         boolean darkTransition = currentLux <= DARK_LUX_THRESHOLD
             && (!hasBrightBaseline || currentLux <= recentMaxLux * LIGHT_DROP_RATIO);
+        boolean strongLightDrop = hasBrightBaseline
+            && currentLux <= recentMaxLux * STRONG_LIGHT_DROP_RATIO;
         boolean recentMotion = hasRecentMotion(nowMs);
         boolean pocketLikeOrientation = isPocketLikeOrientation();
-        return darkTransition && recentMotion && pocketLikeOrientation;
+        return (darkTransition || (strongLightDrop
+            && hasRecentUprightToInvertedTransition(nowMs)))
+            && recentMotion && pocketLikeOrientation;
+    }
+
+    private boolean hasRecentUprightToInvertedTransition(long nowMs) {
+        return lastUprightOrientationAt >= 0L
+            && nowMs >= lastUprightOrientationAt
+            && nowMs - lastUprightOrientationAt <= ORIENTATION_TRANSITION_WINDOW_MS;
     }
 
     private long getLatestTimestamp() {

@@ -7,6 +7,7 @@
 | 작업 | 파일 | 담당 내용 |
 | --- | --- | --- |
 | 메인 화면, 설정, 서비스 시작/중지, 감지 방식 테스트 | [MainActivity.java](../app/src/main/java/com/innoshiftconsult/pocketlock/MainActivity.java), [activity_main.xml](../app/src/main/res/layout/activity_main.xml) | Device Admin 안내, 민감도 저장, `판단하기`, 상태 표시 |
+| 사용자 매뉴얼 화면 | [ManualActivity.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ManualActivity.java), [activity_manual.xml](../app/src/main/res/layout/activity_manual.xml) | 앱 설정, 감지 방식, 진단 및 문제 해결 안내 |
 | 센서 구독, 감지 방식 선택, 실제 화면 잠금 | [PocketLockService.java](../app/src/main/java/com/innoshiftconsult/pocketlock/PocketLockService.java) | 센서 listener 수명, 서비스 잠금 확인, `lockNow()` |
 | 복합 센서 판단 기준 | [PocketSensorFusionDetector.java](../app/src/main/java/com/innoshiftconsult/pocketlock/PocketSensorFusionDetector.java) | 조도·가속도·자세 융합, 확인 시간, 조도 센서 없는 기기의 대체 경로 |
 | 근접 센서 신뢰도와 모드 | [ProximityReliabilityManager.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ProximityReliabilityManager.java), [ProximityReliability.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ProximityReliability.java), [ProximityDetectionMode.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ProximityDetectionMode.java) | 저장된 신뢰도와 근접/복합 감지 방식 연결 |
@@ -28,7 +29,7 @@
 
 복합 센서 방식의 현재 기준은 `PocketSensorFusionDetector`에 있습니다.
 
-- 조도 센서가 있으면 조도가 30 lux 이하로 내려갔는지, 직전 6초 구간의 밝은 기준값에서 충분히 감소했는지, 최근 움직임과 세로 방향 자세가 함께 있는지 판단합니다.
+- 조도 센서가 있으면 기존 30 lux 이하 조건 또는 밝은 기준값 대비 85% 이상 조도 감소 조건을 확인합니다. 강한 조도 감소 경로는 최근 5초 안에 정상 자세에서 뒤집힌 전환이 있어야 하며, 두 경로 모두 최근 움직임과 세로 방향 자세가 함께 있어야 합니다.
 - 조도 센서가 없으면 먼저 평상시 자세를 관찰한 뒤, Y축이 -7 이하로 바뀌고 가속도 샘플 간 변화가 1.5를 넘었는지 확인합니다. 확정된 상태는 평상시 자세로 돌아올 때까지 유지합니다.
 - 복합 센서 후보는 600ms 확인을 거친 뒤 서비스의 추가 잠금 확인을 통과해야 `lockNow()`를 호출합니다.
 

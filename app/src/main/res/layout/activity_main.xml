@@ -15,7 +15,7 @@
         android:paddingBottom="20dp">
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal">
@@ -35,6 +35,27 @@
                 android:text="@string/app_version"
                 android:textColor="@color/muted"
                 android:textSize="15sp" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/manualButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/lavender_button"
+                android:minWidth="0dp"
+                android:minHeight="40dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:text="사용 방법"
+                android:textAllCaps="false"
+                android:textColor="@color/ink"
+                android:textSize="13sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <com.innoshiftconsult.pocketlock.GuideMarqueeTextView
@@ -182,7 +203,7 @@
                 android:layout_marginTop="8dp"
                 android:background="@drawable/lavender_button"
                 android:minHeight="52dp"
-                android:text="판단하기"
+                android:text="내 휴대폰에 맞게 자동 설정"
                 android:textAllCaps="false"
                 android:textColor="@color/ink"
                 android:textSize="16sp"

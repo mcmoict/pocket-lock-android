@@ -37,6 +37,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     private static final String PREFS = "pocket_lock";
     private static final String ENABLED = "enabled";
     private static final String SENSITIVE = "sensitive";
+    private static final String FIRST_RUN_GUIDE_SHOWN = "first_run_guide_shown";
     private DevicePolicyManager devicePolicyManager;
     private SensorManager sensorManager;
     private ComponentName adminComponent;
@@ -79,6 +80,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         detectionModeButton = findViewById(R.id.detectionModeButton);
         Button adminButton = findViewById(R.id.adminButton);
         tintCompoundDrawables(adminButton, R.color.icon_background);
+        Button manualButton = findViewById(R.id.manualButton);
         Button uninstallButton = findViewById(R.id.uninstallButton);
         Button diagnosticsButton = findViewById(R.id.diagnosticsButton);
         RadioGroup sensitivityGroup = findViewById(R.id.sensitivityGroup);
@@ -120,6 +122,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         });
 
         adminButton.setOnClickListener(view -> requestAdminAccess());
+        manualButton.setOnClickListener(view -> startActivity(
+                new Intent(this, ManualActivity.class)));
         uninstallButton.setOnClickListener(view -> prepareForUninstall());
         diagnosticsButton.setOnClickListener(view -> startActivity(
             new Intent(this, DiagnosticsActivity.class)));
@@ -133,7 +137,25 @@ public class MainActivity extends Activity implements SensorEventListener {
             }
         });
         updateUi();
+        showFirstRunGuideIfNeeded(savedInstanceState);
         requestNotificationPermission();
+    }
+
+    private void showFirstRunGuideIfNeeded(Bundle savedInstanceState) {
+        android.content.SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        if (savedInstanceState != null || prefs.getBoolean(FIRST_RUN_GUIDE_SHOWN, false)) {
+            return;
+        }
+        prefs.edit().putBoolean(FIRST_RUN_GUIDE_SHOWN, true).apply();
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("처음 사용하시나요?")
+                .setMessage("① 권한 허용\n[기기 관리자 권한 허용]을 누르세요.\n\n"
+                        + "② 감지 방식 설정\n[내 휴대폰에 맞게 자동 설정]을 누르세요.\n\n"
+                        + "③ 잠금 켜기\n[주머니 잠금 켜기]를 켜세요.")
+                .setPositiveButton("확인", null)
+                .setNeutralButton("자세한 사용 방법", (dialog, which) -> startActivity(
+                        new Intent(this, ManualActivity.class)))
+                .show();
     }
 
     // android:drawableTint is ignored below API 23, so tint compound drawables in code instead.
@@ -246,7 +268,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         } else if (messageIndex == 1) {
             message = "잠금이 안 되면 [기기 진단]에서 근접 센서를 테스트해 주세요.";
         } else {
-            message = "앱을 사용하기 전에 [판단하기]로 주머니 감지 방식을 먼저 확인해 주세요.";
+            message = "앱을 사용하기 전에 [내 휴대폰에 맞게 자동 설정]으로 감지 방식을 먼저 설정해 주세요.";
         }
 
         usageGuideHandler.removeCallbacks(usageGuideMarqueeStarter);
@@ -295,7 +317,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     private void showUsageGuideDialog() {
         new android.app.AlertDialog.Builder(this)
                 .setTitle("사용 안내")
-                .setMessage("처음 사용하신다면 [판단하기]로 주머니 감지 방식을 먼저 확인해 주세요.\n\n"
+                .setMessage("처음 사용하신다면 [내 휴대폰에 맞게 자동 설정]으로 감지 방식을 먼저 설정해 주세요.\n\n"
                         + "자동 잠금이 정상적으로 작동하지 않으면 [기기 진단]에서 근접 센서를 테스트하고 진단 결과를 개발자에게 보내주세요.\n\n"
                         + "앱을 삭제 하려면 먼저 [앱 삭제 준비]를 눌러 기기 관리자 권한을 해제해 주세요.")
                 .setPositiveButton("확인", null)
@@ -331,7 +353,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         } else {
             detectionModeValue.setText("근접 센서 방식");
         }
-        detectionModeButton.setText(detectionTestRunning ? "완료하기" : "판단하기");
+        detectionModeButton.setText(detectionTestRunning ? "완료하기" : "내 휴대폰에 맞게 자동 설정");
     }
 
     private void prepareForUninstall() {
