@@ -14,3 +14,21 @@ app/build/
 captures/
 .externalNativeBuild/
 .cxx/
+.kotlin/
+
+# Signing keys, credentials and release artifacts
+*.p12
+*.pfx
+*.pem
+*.key
+.env
+.env.*
+google-services.json
+service-account*.json
+*.aab
+*.apk
+*.hprof
+
+# OS files
+.DS_Store
+Thumbs.db

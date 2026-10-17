@@ -157,6 +157,29 @@ keyPassword=KEY_PASSWORD
 - Gradle Wrapper: `9.5.0`
 - GitHub: https://github.com/mcmoict/pocket-lock-android
 
+## 공식 배포
+
+Pocket Lock의 공식 앱은 Google Play를 통해서만 배포합니다.
+
+- [Google Play에서 Pocket Lock 설치](https://play.google.com/store/apps/details?id=com.innoshiftconsult.pocketlock)
+- 다른 경로에서 받은 APK/AAB는 공식 빌드가 아니며 지원하지 않습니다.
+
+## 라이선스
+
+이 저장소는 **소스 공개(Source-Available), 모든 권리 보유(All Rights Reserved)** 정책으로 운영합니다. MIT, Apache, GPL 같은 오픈소스 라이선스가 아닙니다.
+
+```
+Copyright (c) 2026 Changmo Moon
+(doing business as InnoShift Consulting)
+
+All rights reserved.
+```
+
+- 허용: 소스 열람, GitHub의 기본 기능을 이용한 열람과 Fork, 개인적인 학습·평가 목적의 로컬 빌드, 보안 제보
+- 금지(저작권자의 서면 허락 필요): 코드 재배포, 상업적 이용, 파생 앱의 스토어 배포, Pocket Lock 이름·아이콘의 사용
+
+자세한 조건은 [LICENSE](LICENSE)를 참고하세요. 현재 LICENSE는 초안이며 법률 검토를 권장합니다. 보안 취약점 제보 방법은 [SECURITY.md](SECURITY.md)를 참고하세요.
+
 ## Google Play 접근성 서비스 제출
 
 Pocket Lock은 장애인 지원용 접근성 도구가 아니므로 `isAccessibilityTool`을 `true`로 선언하지 않습니다. Play Console에서 AccessibilityService API 선언을 제출하고, 실제 사용 목적에 맞게 응답해야 합니다. 선언 검토를 통과한다고 보장할 수 없습니다.

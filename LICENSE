@@ -1,0 +1,75 @@
+Pocket Lock - Proprietary Source-Available License
+Version: Draft 1 (2026)
+
+Copyright (c) 2026 Changmo Moon
+(doing business as InnoShift Consulting)
+
+All rights reserved.
+
+NOTICE: This is a draft policy document and is not an open source license.
+It does not grant the rights of MIT, Apache, GPL or any other OSI-approved
+license. Review it with a qualified legal professional before relying on it.
+
+1. Definitions
+   "Software" means the Pocket Lock source code, resources, documentation,
+   images, icons, and related materials in this repository.
+   "Official App" means the Pocket Lock application distributed by the
+   copyright holder through Google Play.
+
+2. Reserved Rights
+   The Software is source-available, not open source. All rights not expressly
+   granted in this License are reserved by the copyright holder.
+
+3. Permitted Use
+   Without separate permission, you may:
+   a. View and read the source code.
+   b. Use the GitHub features that GitHub's Terms of Service make available to
+      users of a public repository, including viewing and forking the
+      repository on GitHub. Forks remain subject to this License.
+   c. Build the Software locally for personal, non-commercial evaluation,
+      learning, and security review.
+   d. Report bugs and vulnerabilities as described in SECURITY.md.
+
+4. Prohibited Use
+   Without prior written permission from the copyright holder, you may not:
+   a. Copy, redistribute, publish, sublicense, sell, or lease the Software or
+      any part of it, in source or binary form.
+   b. Use the Software or any part of it for commercial purposes.
+   c. Publish or distribute applications, builds, packages (APK or AAB), or
+      services derived from the Software, including on Google Play or other
+      app stores.
+   d. Remove or alter copyright, license, or attribution notices.
+   e. Use the Pocket Lock name, icon, logo, or store listing, or any name or
+      mark that is confusingly similar, in a way that suggests endorsement or
+      an official relationship.
+
+5. Official Distribution
+   The only official distribution channel of Pocket Lock is Google Play:
+   https://play.google.com/store/apps/details?id=com.innoshiftconsult.pocketlock
+   Builds obtained from any other source are not official and are not supported.
+
+6. Contributions
+   Unless agreed otherwise in writing, submitting a contribution does not
+   transfer ownership. By submitting a contribution you grant the copyright
+   holder a perpetual, worldwide, royalty-free, irrevocable license to use,
+   modify, and distribute it as part of the Software and the Official App.
+
+7. Third-Party Components
+   This License applies only to the copyright holder's own materials. Third-party
+   components, if any, remain under their own licenses. At the time of writing,
+   the Android application declares no runtime third-party library dependencies;
+   JUnit (Eclipse Public License 1.0) is used for local tests only and is not
+   distributed with the application.
+
+8. Termination
+   Rights granted here end automatically if you breach this License.
+
+9. Disclaimer of Warranty and Liability
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY
+   CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
+
+10. Permission Requests
+    To request permission for uses not allowed above, contact the copyright
+    holder through the repository owner on GitHub (https://github.com/mcmoict).
