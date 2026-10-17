@@ -1,6 +1,6 @@
 # Pocket Lock - Google Play AccessibilityService API Submission Notes
 
-This document describes the implementation in Pocket Lock 1.0.6 (`versionCode` 27) and prepares the information needed for a Google Play AccessibilityService API declaration. It is not a guarantee of Play approval. Review the current [Google Play AccessibilityService API policy](https://support.google.com/googleplay/android-developer/answer/10964491) before submitting.
+This document describes the implementation in Pocket Lock 1.0.7 (`versionCode` 28) and prepares the information needed for a Google Play AccessibilityService API declaration. It is not a guarantee of Play approval. Review the current [Google Play AccessibilityService API policy](https://support.google.com/googleplay/android-developer/answer/10964491) before submitting.
 
 ## 1. API use and core app function
 
