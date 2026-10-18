@@ -2,23 +2,32 @@ package com.innoshiftconsult.pocketlock;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.os.Bundle;
-import android.os.Build;
+import android.widget.Toast;
 
 public class ManualActivity extends Activity {
+    private static final String POCKET_INSERTION_VIDEO_URL =
+            "https://youtube.com/shorts/CXO_dQ71c10?feature=share";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manual);
         findViewById(R.id.manualBackButton).setOnClickListener(view -> finish());
         setImageClickListeners(findViewById(android.R.id.content));
+        findViewById(R.id.pocketInsertionVideoLink)
+                .setOnClickListener(view -> openPocketInsertionVideo());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             ((TextView) findViewById(R.id.manualIntro))
                     .setText("Pocket Lock은 휴대폰이 주머니에 들어간 것을 감지해 화면을 자동으로 잠그는 앱입니다.\n"
@@ -67,6 +76,15 @@ public class ManualActivity extends Activity {
                     .setText("① [앱 삭제 준비]를 선택합니다.\n"
                             + "② 기기 관리자 설정에서 Pocket Lock 권한을 해제합니다.\n"
                             + "③ 설정의 앱 목록에서 Pocket Lock을 삭제합니다.");
+        }
+    }
+
+    private void openPocketInsertionVideo() {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(POCKET_INSERTION_VIDEO_URL));
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException exception) {
+            Toast.makeText(this, "동영상을 열 수 있는 앱을 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
         }
     }
 
