@@ -21,4 +21,9 @@
     <color name="panel_stroke">#665BB2</color>
     <color name="success">#08A96B</color>
     <color name="white">#FFFFFF</color>
+    <color name="manual_page_background">#FBF9FF</color>
+    <color name="manual_help_divider">#D9D9D9</color>
+    <color name="flat_button_background">#E6DFF5</color>
+    <color name="flat_button_pressed">#D8CCEE</color>
+    <color name="flat_button_outline">#B6A8D8</color>
 </resources>

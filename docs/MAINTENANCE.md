@@ -1,12 +1,12 @@
 # 개발·운영 및 개선 가이드
 
-이 문서는 Pocket Lock을 수정하고, 기기별 동작을 확인하고, 릴리스하는 절차를 정리합니다. 현재 앱 버전은 `1.0.9` (`versionCode` 30)입니다.
+이 문서는 Pocket Lock을 수정하고, 기기별 동작을 확인하고, 릴리스하는 절차를 정리합니다. 현재 앱 버전은 `1.1.0` (`versionCode` 31)입니다.
 
 ## 주요 코드 위치
 
 | 작업 | 파일 | 담당 내용 |
 | --- | --- | --- |
-| 메인 화면, 설정, 서비스 시작/중지, 감지 방식 테스트 | [MainActivity.java](../app/src/main/java/com/innoshiftconsult/pocketlock/MainActivity.java), [activity_main.xml](../app/src/main/res/layout/activity_main.xml) | Android 버전별 잠금 권한 안내, 민감도 저장, 감지 방식 테스트, 상태 표시 |
+| 메인 화면, 설정, 서비스 시작/중지, 감지 방식 테스트 | [MainActivity.java](../app/src/main/java/com/innoshiftconsult/pocketlock/MainActivity.java), [activity_main.xml](../app/src/main/res/layout/activity_main.xml) | Android 버전별 잠금 권한 안내, 보통 감도 고정, 감지 방식 테스트, 상태 표시 |
 | 사용자 매뉴얼 화면 | [ManualActivity.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ManualActivity.java), [activity_manual.xml](../app/src/main/res/layout/activity_manual.xml) | 앱 설정, 감지 방식, 진단 및 문제 해결 안내 |
 | 센서 구독 및 감지 방식 선택 | [PocketLockService.java](../app/src/main/java/com/innoshiftconsult/pocketlock/PocketLockService.java) | 센서 listener 수명, 기존 주머니 감지 조건 및 중복 잠금 방지 |
 | 버전별 화면 잠금 | [ScreenLockManager.java](../app/src/main/java/com/innoshiftconsult/pocketlock/ScreenLockManager.java), [PocketLockAccessibilityService.java](../app/src/main/java/com/innoshiftconsult/pocketlock/PocketLockAccessibilityService.java) | Android 9 이상은 접근성 전역 잠금 동작, Android 8.1 이하는 Device Admin `lockNow()` |
@@ -27,6 +27,7 @@
 
 근접 센서 방식의 현재 동작은 `PocketLockService`에 있습니다.
 
+- 현재 메인 화면은 감도 선택 UI를 제공하지 않으며, 앱 화면을 열 때 감도를 보통 모드로 초기화합니다. 아래 민감 모드 분기는 서비스에 남아 있는 구현 세부사항이며 현재 화면에서 선택할 수 없습니다.
 - 보통 모드는 센서값이 `min(maximumRange, 1 cm)`보다 작으면 가림으로 판단하고, 기기가 뒤집힌 자세일 때 잠금을 허용합니다.
 - 민감 모드는 센서 최대 범위를 가림 기준으로 사용하고, 방향 제한 없이 잠금을 허용합니다. 사용 중인 화면도 닫힐 수 있습니다.
 - 잠금 요청 전 추가 확인 시간은 보통 500ms, 민감 모드 300ms입니다.

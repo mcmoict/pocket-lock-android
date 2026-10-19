@@ -17,8 +17,34 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class ManualActivity extends Activity {
+    static final String EXTRA_GUIDE_ACTION = "com.innoshiftconsult.pocketlock.GUIDE_ACTION";
+    static final String ACTION_PERMISSION = "permission";
+    static final String ACTION_DETECTION = "detection";
+    static final String ACTION_DIAGNOSTICS = "diagnostics";
+    static final String ACTION_UNINSTALL = "uninstall";
+
     private static final String POCKET_INSERTION_VIDEO_URL =
             "https://youtube.com/shorts/CXO_dQ71c10?feature=share";
+    private static final int[][] MAIN_ACCORDION_IDS = {
+            {R.id.helpLockHeader, R.id.helpLockPanel},
+            {R.id.helpSensorsHeader, R.id.helpSensorsPanel},
+            {R.id.helpUninstallHeader, R.id.helpUninstallPanel}
+    };
+    private static final String[] MAIN_ACCORDION_LABELS = {
+            "화면이 잠기지 않아요",
+            "센서 방식이 궁금해요",
+            "앱을 삭제하고 싶어요"
+    };
+    private static final int[][] DETAIL_ACCORDION_IDS = {
+            {R.id.helpDiagnosticsDetailsHeader, R.id.helpDiagnosticsDetailsPanel},
+            {R.id.helpPermissionDetailsHeader, R.id.helpPermissionDetailsPanel},
+            {R.id.helpSensorTechnicalHeader, R.id.helpSensorTechnicalPanel}
+    };
+    private static final String[] DETAIL_ACCORDION_LABELS = {
+            "센서 진단 결과 보내기",
+            "화면 잠금 권한과 안내 자세히 보기",
+            "센서 동작 자세히 보기"
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,55 +54,119 @@ public class ManualActivity extends Activity {
         setImageClickListeners(findViewById(android.R.id.content));
         findViewById(R.id.pocketInsertionVideoLink)
                 .setOnClickListener(view -> openPocketInsertionVideo());
+
+        bindAccordionGroup(MAIN_ACCORDION_IDS, MAIN_ACCORDION_LABELS,
+                savedInstanceState, "manual_main_accordion", true);
+        bindAccordionGroup(DETAIL_ACCORDION_IDS, DETAIL_ACCORDION_LABELS,
+                savedInstanceState, "manual_detail_accordion", false);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            ((TextView) findViewById(R.id.manualIntro))
-                    .setText("Pocket Lock은 휴대폰이 주머니에 들어간 것을 감지해 화면을 자동으로 잠그는 앱입니다.\n"
-                            + "Android 9 이상에서는 자동 잠금 기능을 사용하기 위해 접근성 서비스를 켜야 합니다.\n"
-                            + "※ 사용 방법 안내의 그림을 누르면 확대해서 확인할 수 있습니다.");
-            ((TextView) findViewById(R.id.manualPermissionHeading))
-                    .setText("① 접근성 서비스 켜기");
-            ((TextView) findViewById(R.id.manualPermissionDetails))
-                    .setText("• 메인 화면에서 [접근성 설정 열기]를 선택합니다.\n"
-                            + "• 안내가 표시되면 내용을 확인한 뒤 [동의하고 설정 열기]를 누릅니다.\n"
-                            + "• 접근성 설정에서 Pocket Lock을 찾아 서비스를 사용하도록 설정합니다.\n"
-                            + "• 앱으로 돌아와 [접근성 서비스 사용 중] 상태인지 확인합니다.\n\n"
-                            + "메뉴 이름은 기기에 따라 다를 수 있습니다. Galaxy에서는 [설치된 앱], "
-                            + "일부 Android 기기에서는 [다운로드한 앱] 또는 [설치된 서비스]에서 찾을 수 있습니다.\n\n"
-                            + "Pocket Lock은 화면 내용이나 입력 정보를 읽거나 수집하지 않으며, 화면 잠금 기능만 실행합니다.");
-            findViewById(R.id.accessibilityImageColumn).setVisibility(View.VISIBLE);
-            findViewById(R.id.legacyAdminImageRow).setVisibility(View.GONE);
-            ((TextView) findViewById(R.id.manualLockOnDetails))
-                    .setText("• [주머니 잠금 켜기] 스위치를 켭니다.\n"
-                            + "• 아래 문구가 표시되면 정상적으로 작동 중입니다.\n\n"
-                            + "'감시중 · 접근성 서비스 사용 중 · 근접 센서로 확인합니다.'\n"
-                            + "또는\n"
-                            + "'감시중 · 접근성 서비스 사용 중 · 조도·가속도·자세 센서로 확인합니다.'");
-            findViewById(R.id.accessibilityLockOnImageRow).setVisibility(View.VISIBLE);
-            findViewById(R.id.legacyLockOnImageRow).setVisibility(View.GONE);
+            ((TextView) findViewById(R.id.manualPermissionSummary))
+                    .setText("접근성 설정에서 Pocket Lock 사용을 켜주세요.");
+            ((ImageView) findViewById(R.id.manualPermissionImage1))
+                    .setImageResource(R.drawable.manual_accessibility_02);
+            ((ImageView) findViewById(R.id.manualPermissionImage2))
+                    .setImageResource(R.drawable.manual_accessibility_03);
             ((TextView) findViewById(R.id.manualUninstallDetails))
-                    .setText("① [앱 삭제 준비]를 선택합니다.\n"
-                            + "② [앱 정보 열기]를 눌러 앱 정보 화면에서 삭제합니다.\n\n"
-                            + "접근성 서비스가 켜져 있어도 앱을 삭제할 수 있습니다. 서비스를 끄려면 "
-                            + "[접근성 설정]에서 Pocket Lock을 선택한 뒤 사용을 중지합니다.\n\n"
-                            + "이전 Android 버전에서 기기 관리자 권한을 허용한 경우에는 먼저 해당 권한을 해제해야 합니다.");
+                    .setText("앱 정보 화면에서 삭제할 수 있습니다.\n\n"
+                            + "접근성 서비스가 켜져 있어도 일반적인 앱 삭제 절차를 진행할 수 있습니다. "
+                            + "서비스를 끄려면 접근성 설정에서 Pocket Lock을 찾아 사용을 중지할 수 있습니다. "
+                            + "이전 Android 버전에서 기기 관리자 권한을 허용한 경우에는 해당 권한 해제가 필요할 수 있습니다.");
+            findViewById(R.id.manualPermissionDetailAdminImage).setVisibility(View.GONE);
+            ((TextView) findViewById(R.id.manualLockStatusDetails))
+                    .setText("주머니 잠금이 켜지면 '감시중 · 접근성 서비스 사용 중 · 근접 센서로 확인합니다.' "
+                            + "또는 '감시중 · 접근성 서비스 사용 중 · 조도·가속도·자세 센서로 확인합니다.'가 표시됩니다.");
         } else {
-            ((TextView) findViewById(R.id.manualIntro))
-                    .setText("Pocket Lock은 휴대폰이 주머니에 들어간 것을 감지해 화면을 자동으로 잠그는 앱입니다.\n\n"
-                            + "Android 8.1 이하에서는 화면 잠금 기능에 기기 관리자 권한이 필요합니다. "
-                            + "그림을 누르면 확대해서 확인할 수 있습니다.");
-            ((TextView) findViewById(R.id.manualPermissionHeading))
-                    .setText("① 기기 관리자 권한 허용");
-            ((TextView) findViewById(R.id.manualPermissionDetails))
-                    .setText("• 메인 화면에서 [기기 관리자 설정 열기]를 선택합니다.\n"
-                            + "• Pocket Lock을 선택하고 기기 관리자 권한을 활성화합니다.\n"
-                            + "• 앱으로 돌아와 감지 방식을 확인한 뒤 [주머니 잠금 켜기]를 활성화합니다.\n\n"
-                            + "※ Android 보안 정책에 따라 잠금 후 지문·얼굴 대신 PIN·패턴·비밀번호를 입력해야 할 수 있습니다.");
-            findViewById(R.id.accessibilityImageColumn).setVisibility(View.GONE);
+            ((TextView) findViewById(R.id.manualPermissionSummary))
+                    .setText("기기 관리자 권한을 허용해 주세요.");
+            ((ImageView) findViewById(R.id.manualPermissionImage1))
+                    .setImageResource(R.drawable.manual_admin);
+            ((ImageView) findViewById(R.id.manualPermissionImage1))
+                    .setContentDescription("기기 관리자 권한 활성화 화면. 탭하여 확대할 수 있습니다.");
+            findViewById(R.id.manualPermissionImage2).setVisibility(View.GONE);
+            findViewById(R.id.manualPermissionCaption2).setVisibility(View.GONE);
+            ((TextView) findViewById(R.id.manualPermissionCaption1))
+                    .setText("기기 관리자 권한 활성화");
             ((TextView) findViewById(R.id.manualUninstallDetails))
-                    .setText("① [앱 삭제 준비]를 선택합니다.\n"
-                            + "② 기기 관리자 설정에서 Pocket Lock 권한을 해제합니다.\n"
-                            + "③ 설정의 앱 목록에서 Pocket Lock을 삭제합니다.");
+                    .setText("기기 관리자 권한이 활성화되어 있다면 먼저 기기 관리자 권한을 해제한 뒤, "
+                            + "휴대폰 설정에서 앱을 삭제해 주세요.");
+            ((TextView) findViewById(R.id.manualLockStatusDetails))
+                    .setText("주머니 잠금이 켜지면 '감시중 · 근접 센서로 주머니 상태를 확인합니다.' "
+                            + "또는 '감시중 · 조도·가속도·자세 센서로 주머니 상태를 확인합니다.'가 표시됩니다.");
         }
+
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        saveAccordionStates(outState, MAIN_ACCORDION_IDS, "manual_main_accordion");
+        saveAccordionStates(outState, DETAIL_ACCORDION_IDS, "manual_detail_accordion");
+        super.onSaveInstanceState(outState);
+    }
+
+    private void saveAccordionStates(Bundle outState, int[][] accordionIds, String statePrefix) {
+        for (int i = 0; i < accordionIds.length; i++) {
+            outState.putBoolean(statePrefix + "_" + i,
+                    findViewById(accordionIds[i][1]).getVisibility() == View.VISIBLE);
+        }
+    }
+
+    private void bindAccordionGroup(int[][] accordionIds, String[] labels,
+                                    Bundle savedInstanceState, String statePrefix,
+                                    boolean mainGroup) {
+        boolean restoredExpandedItem = false;
+        for (int i = 0; i < accordionIds.length; i++) {
+            TextView header = findViewById(accordionIds[i][0]);
+            View panel = findViewById(accordionIds[i][1]);
+            String label = labels[i];
+            boolean expanded = savedInstanceState != null
+                    && savedInstanceState.getBoolean(statePrefix + "_" + i, false)
+                    && !restoredExpandedItem;
+            restoredExpandedItem |= expanded;
+            setAccordionState(header, panel, label, expanded);
+            header.setOnClickListener(view -> {
+                boolean shouldExpand = panel.getVisibility() != View.VISIBLE;
+                if (mainGroup) {
+                    collapseAccordionGroup(MAIN_ACCORDION_IDS, MAIN_ACCORDION_LABELS);
+                    collapseAccordionGroup(DETAIL_ACCORDION_IDS, DETAIL_ACCORDION_LABELS);
+                } else {
+                    collapseAccordionGroup(DETAIL_ACCORDION_IDS, DETAIL_ACCORDION_LABELS);
+                }
+                if (shouldExpand) {
+                    setAccordionState(header, panel, label, true);
+                }
+            });
+        }
+    }
+
+    private void collapseAccordionGroup(int[][] accordionIds, String[] labels) {
+        for (int i = 0; i < accordionIds.length; i++) {
+            setAccordionState(findViewById(accordionIds[i][0]),
+                    findViewById(accordionIds[i][1]), labels[i], false);
+        }
+    }
+
+    private void setAccordionState(TextView header, View panel, String label, boolean expanded) {
+        panel.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        header.setText(label);
+        int chevron = expanded ? R.drawable.ic_chevron_up : R.drawable.ic_chevron_down;
+        header.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, chevron, 0);
+        if (header.getId() == R.id.helpDiagnosticsDetailsHeader
+                || header.getId() == R.id.helpPermissionDetailsHeader
+                || header.getId() == R.id.helpSensorTechnicalHeader) {
+            header.getCompoundDrawablesRelative()[2].setTint(getResources().getColor(R.color.ink));
+        } else {
+            header.getCompoundDrawablesRelative()[2].setTint(getResources().getColor(R.color.white));
+        }
+        header.setContentDescription(label + (expanded ? ", 접기" : ", 펼쳐서 보기"));
+        header.setSelected(expanded);
+    }
+
+    private void returnToMain(String action) {
+        Intent result = new Intent();
+        result.putExtra(EXTRA_GUIDE_ACTION, action);
+        setResult(RESULT_OK, result);
+        finish();
     }
 
     private void openPocketInsertionVideo() {

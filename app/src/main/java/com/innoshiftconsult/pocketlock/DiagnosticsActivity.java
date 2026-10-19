@@ -515,12 +515,12 @@ public class DiagnosticsActivity extends Activity implements SensorEventListener
         TableRow row = new TableRow(this);
         TextView labelView = new TextView(this);
         labelView.setText(label);
-        labelView.setTextColor(getResources().getColor(R.color.ink));
+        labelView.setTextColor(getResources().getColor(R.color.muted));
         labelView.setTextSize(14);
         labelView.setPadding(4, 3, 16, 3);
         TextView valueView = new TextView(this);
         valueView.setText(value);
-        valueView.setTextColor(getResources().getColor(R.color.ink));
+        valueView.setTextColor(getResources().getColor(R.color.white));
         valueView.setTextSize(14);
         valueView.setPadding(4, 3, 4, 3);
         row.addView(labelView, new TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 0.27f));

@@ -20,14 +20,13 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.net.Uri;
 import android.widget.Button;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.view.View;
 
 public class MainActivity extends Activity implements SensorEventListener {
     private static final int ADMIN_REQUEST = 100;
+    private static final int MANUAL_REQUEST = 101;
     private android.app.AlertDialog accessibilityDisclosureDialog;
     private static final long PROXIMITY_DEBOUNCE_MS = 400L;
     private static final long USAGE_GUIDE_PAUSE_MILLIS = 1500L;
@@ -103,43 +102,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         Button manualButton = findViewById(R.id.manualButton);
         Button uninstallButton = findViewById(R.id.uninstallButton);
         Button diagnosticsButton = findViewById(R.id.diagnosticsButton);
-        RadioGroup sensitivityGroup = findViewById(R.id.sensitivityGroup);
-        RadioButton normalRadio = findViewById(R.id.normalSensitivity);
-        RadioButton sensitiveRadio = findViewById(R.id.sensitiveSensitivity);
         TextView privacyPolicyLink = findViewById(R.id.privacyPolicyLink);
-        final boolean[] restoringSensitivity = {false};
-        boolean sensitive = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SENSITIVE, false);
-        sensitivityGroup.check(sensitive ? sensitiveRadio.getId() : normalRadio.getId());
-        sensitivityGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            if (restoringSensitivity[0]) {
-                return;
-            }
-            if (checkedId != sensitiveRadio.getId()) {
-                saveSensitivity(false);
-                return;
-            }
-            android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
-                    .setTitle("민감 모드 사용")
-                    .setMessage("민감 모드에서는 근접센서에 의해 사용 중인 화면이 닫힐 수 있습니다. 설정하시겠습니까?")
-                    .setNegativeButton("취소", null)
-                    .setPositiveButton("설정", (ignoredDialog, which) -> saveSensitivity(true))
-                    .create();
-            dialog.setOnShowListener(ignored -> dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)
-                    .setOnClickListener(view -> {
-                        restoringSensitivity[0] = true;
-                        group.check(normalRadio.getId());
-                        restoringSensitivity[0] = false;
-                        saveSensitivity(false);
-                        dialog.dismiss();
-                    }));
-            dialog.setOnCancelListener(ignored -> {
-                restoringSensitivity[0] = true;
-                group.check(normalRadio.getId());
-                restoringSensitivity[0] = false;
-                saveSensitivity(false);
-            });
-            dialog.show();
-        });
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(SENSITIVE, false).apply();
 
         adminButton.setOnClickListener(view -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -148,8 +112,8 @@ public class MainActivity extends Activity implements SensorEventListener {
                 requestAdminAccess();
             }
         });
-        manualButton.setOnClickListener(view -> startActivity(
-                new Intent(this, ManualActivity.class)));
+        manualButton.setOnClickListener(view -> startActivityForResult(
+                new Intent(this, ManualActivity.class), MANUAL_REQUEST));
         uninstallButton.setOnClickListener(view -> prepareForUninstall());
         diagnosticsButton.setOnClickListener(view -> startActivity(
             new Intent(this, DiagnosticsActivity.class)));
@@ -317,11 +281,6 @@ public class MainActivity extends Activity implements SensorEventListener {
         } else {
             stopService(serviceIntent);
         }
-        updateUi();
-    }
-
-    private void saveSensitivity(boolean sensitive) {
-        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(SENSITIVE, sensitive).apply();
         updateUi();
     }
 
@@ -686,7 +645,22 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ADMIN_REQUEST) {
+        if (requestCode == MANUAL_REQUEST && resultCode == RESULT_OK && data != null) {
+            String action = data.getStringExtra(ManualActivity.EXTRA_GUIDE_ACTION);
+            if (ManualActivity.ACTION_PERMISSION.equals(action)) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    requestAccessibilityActivation();
+                } else {
+                    requestAdminAccess();
+                }
+            } else if (ManualActivity.ACTION_DETECTION.equals(action)) {
+                toggleDetectionModeTest();
+            } else if (ManualActivity.ACTION_DIAGNOSTICS.equals(action)) {
+                startActivity(new Intent(this, DiagnosticsActivity.class));
+            } else if (ManualActivity.ACTION_UNINSTALL.equals(action)) {
+                prepareForUninstall();
+            }
+        } else if (requestCode == ADMIN_REQUEST) {
             updateUi();
         }
     }
