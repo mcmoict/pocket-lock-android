@@ -64,7 +64,7 @@ public class ManualActivity extends Activity {
             ((TextView) findViewById(R.id.manualPermissionSummary))
                     .setText("접근성 설정에서 Pocket Lock 사용을 켜주세요.");
             ((ImageView) findViewById(R.id.manualPermissionImage1))
-                    .setImageResource(R.drawable.manual_accessibility_02);
+                    .setImageResource(R.drawable.manual_permission_step_1);
             ((ImageView) findViewById(R.id.manualPermissionImage2))
                     .setImageResource(R.drawable.manual_accessibility_03);
             ((TextView) findViewById(R.id.manualUninstallDetails))
