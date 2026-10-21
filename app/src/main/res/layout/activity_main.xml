@@ -46,7 +46,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:layout_marginStart="8dp"
-                android:background="@drawable/lavender_button"
+                android:background="@drawable/lavender_flat_button"
+                android:drawableStart="@drawable/ic_manual"
+                android:drawableTint="@color/icon_background"
+                android:drawablePadding="6dp"
                 android:minWidth="0dp"
                 android:minHeight="40dp"
                 android:paddingStart="12dp"
@@ -198,25 +201,43 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <Button
-                android:id="@+id/detectionModeButton"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/lavender_button"
-                android:minHeight="52dp"
-                android:text="내 휴대폰에 맞게 자동 설정"
-                android:textAllCaps="false"
-                android:textColor="@color/ink"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="8dp">
+
+                <Button
+                    android:id="@+id/detectionModeButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/lavender_button"
+                    android:elevation="0dp"
+                    android:gravity="center"
+                    android:minHeight="52dp"
+                    android:stateListAnimator="@null"
+                    android:text="내 휴대폰에 맞게 자동 설정"
+                    android:textAllCaps="false"
+                    android:textColor="@color/ink"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="start|center_vertical"
+                    android:layout_marginStart="16dp"
+                    android:contentDescription=""
+                    android:elevation="1dp"
+                    android:src="@drawable/ic_auto_setup"
+                    android:tint="@color/icon_background" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/detectionModeGuide"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="근접 센서 테스트\n통화할 때처럼 휴대폰 화면을 얼굴 쪽으로 가져갔다가 다시 떼어주세요.\n2~3회 반복해 주세요."
+                android:text="근접 센서 테스트 · 통화할 때처럼 휴대폰 화면을 얼굴 쪽으로 가져갔다가 다시 떼어주세요. 2~3회 반복해 주세요."
                 android:textColor="@color/muted"
                 android:textSize="15sp"
                 android:visibility="gone" />
@@ -234,7 +255,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/lavender_button"
+                android:background="@drawable/lavender_flat_button"
                 android:drawableStart="@drawable/ic_delete_small"
                 android:drawableEnd="@drawable/ic_arrow_forward_small"
                 android:drawableTint="@color/icon_background"
@@ -255,7 +276,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:background="@drawable/lavender_button"
+                android:background="@drawable/lavender_flat_button"
                 android:drawableStart="@drawable/ic_info_small"
                 android:drawableEnd="@drawable/ic_arrow_forward_small"
                 android:drawableTint="@color/icon_background"

@@ -15,38 +15,33 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
             android:paddingStart="22dp"
             android:paddingTop="18dp"
             android:paddingEnd="22dp"
             android:paddingBottom="6dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/manualBackButton"
+                android:layout_width="40dp"
+                android:layout_height="56dp"
+                android:clickable="true"
+                android:contentDescription="메인 화면으로 돌아가기"
+                android:drawableStart="@drawable/ic_chevron_back"
+                android:focusable="true"
+                android:gravity="center" />
+
+            <TextView
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="2dp"
+                android:layout_weight="1"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/manualBackButton"
-                    android:layout_width="40dp"
-                    android:layout_height="56dp"
-                    android:clickable="true"
-                    android:contentDescription="메인 화면으로 돌아가기"
-                    android:drawableStart="@drawable/ic_chevron_back"
-                    android:focusable="true"
-                    android:gravity="center" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="사용 방법"
-                    android:textColor="@color/white"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
+                android:text="사용 방법"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
@@ -133,7 +128,7 @@
 
                 <TextView
                     style="@style/ManualCardBody"
-                    android:text="주머니 잠금 켜기를 스위치를 활성화 해주세요." />
+                    android:text="주머니 잠금 켜기 스위치를 활성화 해주세요." />
             </LinearLayout>
 
             <LinearLayout
@@ -156,8 +151,13 @@
                 <TextView
                     android:id="@+id/pocketInsertionVideoLink"
                     style="@style/ManualCaption"
+                    android:layout_width="wrap_content"
+                    android:layout_gravity="center_horizontal"
                     android:layout_marginTop="10dp"
                     android:clickable="true"
+                    android:gravity="center_vertical"
+                    android:drawableStart="@drawable/ic_youtube"
+                    android:drawablePadding="8dp"
                     android:focusable="true"
                     android:padding="8dp"
                     android:text="휴대폰 넣는 방법 영상 보기"
@@ -186,7 +186,7 @@
 
                     <TextView
                         style="@style/ManualCardBody"
-                        android:text="다음 순서로 확인해 주세요.\n\n1. 화면 잠금 권한이 활성화되어 있는지 확인합니다.\n2. 주머니 잠금 스위치가 켜져 있는지 확인합니다.\n3. 감지 방식을 다시 자동 설정합니다.\n4. 화면이 잠기지 않으면 감도를 '민감'으로 변경해 봅니다.\n5. 문제가 계속되면 기기 진단을 실행합니다." />
+                        android:text="다음 순서로 확인해 주세요.\n\n1. 화면 잠금 권한이 활성화되어 있는지 확인합니다.\n2. 주머니 잠금 스위치가 켜져 있는지 확인합니다.\n3. 감지 방식을 다시 자동 설정합니다.\n4. 문제가 계속되면 기기 진단을 실행합니다." />
 
                     <Button
                         android:id="@+id/helpDiagnosticsDetailsHeader"
@@ -315,7 +315,7 @@
 
                         <TextView
                             style="@style/ManualCardBody"
-                            android:text="감지 방식 설정하기를 눌러 자동 설정을 시작하고, 통화할 때처럼 휴대폰을 얼굴 가까이 댔다가 떼는 동작을 2~3회 반복합니다. 화면의 [완료하기]를 눌러 설정을 마칩니다. 자동 설정은 근접 센서의 반응을 확인해 내 휴대폰에 맞는 감지 방식을 선택합니다.\n\n진단에서 NEAR는 센서가 가까운 물체를 감지한 상태, FAR는 가까운 물체가 없는 상태를 뜻합니다. FAR → NEAR → FAR 변화가 안정적으로 확인되지 않으면 복합 센서 방식이 선택될 수 있습니다.\n\n복합 센서 방식은 조도 변화와 가속도·자세 변화 정보를 함께 사용합니다. 휴대폰을 뒤집어 세로로 넣는 방법을 권장합니다." />
+                            android:text="메인 화면에서 내 휴대폰에 맞게 자동 설정 버튼을 눌러 자동 설정을 시작하고, 통화할 때처럼 휴대폰을 얼굴 가까이 댔다가 떼는 동작을 2~3회 반복합니다. 화면의 [완료하기]를 눌러 설정을 마칩니다. 자동 설정은 근접 센서의 반응을 확인해 내 휴대폰에 맞는 감지 방식을 선택합니다.\n\n진단에서 NEAR는 센서가 가까운 물체를 감지한 상태, FAR는 가까운 물체가 없는 상태를 뜻합니다. FAR → NEAR → FAR 변화가 안정적으로 확인되지 않으면 복합 센서 방식이 선택될 수 있습니다.\n\n복합 센서 방식은 조도 변화와 가속도·자세 변화 정보를 함께 사용합니다. 휴대폰을 주머니에 세로로 넣는 방법을 권장합니다." />
 
                     </LinearLayout>
                 </LinearLayout>

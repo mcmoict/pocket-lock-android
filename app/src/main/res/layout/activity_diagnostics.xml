@@ -35,9 +35,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="2dp"
+                android:gravity="center_vertical"
                 android:text="기기 진단"
                 android:textColor="@color/white"
-                android:textSize="20sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -170,7 +171,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:background="@drawable/lavender_button"
+                android:background="@drawable/lavender_flat_button"
                 android:clickable="true"
                 android:contentDescription="진단 결과 복사"
                 android:focusable="true"

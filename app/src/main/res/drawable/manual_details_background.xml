@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <corners android:radius="12dp" />
-    <solid android:color="@color/panel_dark" />
-    <stroke android:width="1dp" android:color="@color/panel_stroke" />
+    <corners android:radius="@dimen/corner_radius_card" />
+    <solid android:color="@color/card_background" />
+    <stroke android:width="1dp" android:color="@color/card_border" />
 </shape>
